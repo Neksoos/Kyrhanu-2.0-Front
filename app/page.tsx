@@ -10,33 +10,29 @@ type AuthResponse = {
   is_new: boolean
 }
 
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: any) => void
-  }
-}
-
 export default function Page() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-
-  // для браузера-виджета
-  const [botUsername, setBotUsername] = useState<string>('')
-  const [widgetReady, setWidgetReady] = useState(false)
 
   const isTelegramMiniApp = useMemo(() => {
     return typeof window !== 'undefined' && !!(window as any)?.Telegram?.WebApp
   }, [])
 
-  // 1) Mini App: автологін/автореєстрація одразу
   useEffect(() => {
     if (!isTelegramMiniApp) return
 
     const tg = (window as any).Telegram.WebApp
+
+    // щоб Mini App коректно ініціалізувався
+    try {
+      tg.ready?.()
+      tg.expand?.()
+    } catch {}
+
     const initData = tg?.initData
 
     if (!initData) {
-      setErr('Telegram initData порожній. Відкрий гру через Mini App.')
+      setErr('Telegram initData порожній. Відкрий гру через Telegram Mini App.')
       return
     }
 
@@ -45,85 +41,28 @@ export default function Page() {
         setErr(null)
         setLoading(true)
 
+        // ✅ Mini App логін ТІЛЬКИ через initData
         const res = await apiPost<AuthResponse>('/api/auth/telegram', {
           init_data: initData,
         })
 
         localStorage.setItem('access_token', res.access_token)
-        window.location.href = res.is_new ? '/onboarding' : '/game'
-      } catch (e: any) {
-        setErr(e?.message || 'Помилка авторизації Telegram')
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [isTelegramMiniApp])
 
-  // 2) Browser: беремо бот юзернейм з runtime-конфігу (щоб не залежати від build env)
-  useEffect(() => {
-    if (isTelegramMiniApp) return
-
-    ;(async () => {
-      try {
-        const res = await fetch('/api/public-config', { cache: 'no-store' })
-        const data = await res.json()
-        if (!data?.tgBotUsername) {
-          setErr('Не задано TG bot username у Railway Variables')
+        // якщо новий — реєстрація/онбординг
+        if (res.is_new) {
+          window.location.href = '/onboarding'
           return
         }
-        setBotUsername(data.tgBotUsername)
-      } catch {
-        setErr('Не вдалося завантажити public-config')
-      }
-    })()
-  }, [isTelegramMiniApp])
 
-  // 3) Browser: вставляємо Telegram Login Widget прямо на головну
-  useEffect(() => {
-    if (isTelegramMiniApp) return
-    if (!botUsername) return
-
-    window.onTelegramAuth = async (user: any) => {
-      try {
-        setErr(null)
-        setLoading(true)
-
-        const res = await apiPost<AuthResponse>('/api/auth/telegram-widget', user)
-
-        localStorage.setItem('access_token', res.access_token)
-        window.location.href = res.is_new ? '/onboarding' : '/game'
+        // якщо існуючий — у гру
+        window.location.href = '/game'
       } catch (e: any) {
-        setErr(e?.message || 'Помилка авторизації Telegram Widget')
+        setErr(e?.message || 'Помилка авторизації Telegram (Mini App)')
       } finally {
         setLoading(false)
       }
-    }
-
-    const container = document.getElementById('tg-widget')
-    if (!container) return
-
-    container.innerHTML = ''
-    setWidgetReady(false)
-
-    const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.async = true
-    script.onload = () => setWidgetReady(true)
-
-    script.setAttribute('data-telegram-login', botUsername)
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-userpic', 'true')
-    script.setAttribute('data-radius', '10')
-    script.setAttribute('data-request-access', 'write')
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)')
-
-    container.appendChild(script)
-
-    return () => {
-      delete window.onTelegramAuth
-      container.innerHTML = ''
-    }
-  }, [isTelegramMiniApp, botUsername])
+    })()
+  }, [isTelegramMiniApp])
 
   return (
     <main className="min-h-screen flex items-start justify-center p-4 pixel-noise">
@@ -134,17 +73,17 @@ export default function Page() {
           Етно-українська гра міфології та долі
         </p>
 
-        {err && (
-          <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
-            {err}
-          </div>
-        )}
-
         {isTelegramMiniApp ? (
           <>
             <div className="text-sm mb-3 opacity-80">
-              {loading ? 'Входимо через Telegram…' : 'Запуск через Telegram Mini App'}
+              {loading ? 'Входимо через Telegram Mini App…' : 'Запуск через Telegram Mini App'}
             </div>
+
+            {err && (
+              <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
+                {err}
+              </div>
+            )}
 
             <button
               className="pixel-btn pixel-btn-primary w-full"
@@ -156,18 +95,22 @@ export default function Page() {
           </>
         ) : (
           <>
-            {!err && !widgetReady && (
-              <div className="text-sm mb-3 opacity-80">Завантажуємо Telegram Widget…</div>
-            )}
+            <p className="text-sm mb-3 opacity-80">
+              У браузері вхід працює через Telegram Login Widget або пароль.
+            </p>
 
-            <div id="tg-widget" className="flex justify-center" />
+            <button
+              className="pixel-btn pixel-btn-primary w-full"
+              onClick={() => (window.location.href = '/login-telegram')}
+            >
+              Увійти через Telegram
+            </button>
 
-            <div className="h-3" />
+            <div className="h-2" />
 
             <button
               className="pixel-btn w-full"
               onClick={() => (window.location.href = '/login')}
-              disabled={loading}
             >
               Або увійти паролем
             </button>

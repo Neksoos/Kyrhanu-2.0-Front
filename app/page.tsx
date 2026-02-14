@@ -12,6 +12,7 @@ import { Shop } from '@/components/Shop'
 import { Navigation } from '@/components/Navigation'
 import { UserBar } from '@/components/UserBar'
 import { Notifications } from '@/components/Notifications'
+import { TelegramLoginWidget } from '@/components/TelegramLoginWidget'
 
 export default function Home() {
   const { isAuthenticated, setAuth, activeTab } = useStore()
@@ -109,16 +110,21 @@ function LoginScreen() {
         </p>
 
         {mode === 'telegram' && (
-          <div className="text-center">
-            <p className="text-kurgan-text mb-4">
-              Відкрий гру через Telegram для кращого досвіду
+          <div className="text-center space-y-4">
+            <p className="text-kurgan-text">
+              Увійди через Telegram (один акаунт працює і в Mini App, і в браузері)
             </p>
-            <button
-              onClick={() => setMode('login')}
-              className="w-full py-3 bg-kurgan-accent text-kurgan-bg font-bold rounded hover:bg-kurgan-accent-dim transition"
-            >
-              Грати в браузері
-            </button>
+
+            <TelegramLoginWidget />
+
+            <div className="pt-2">
+              <button
+                onClick={() => setMode('login')}
+                className="w-full py-3 bg-kurgan-accent text-kurgan-bg font-bold rounded hover:bg-kurgan-accent-dim transition"
+              >
+                Або увійти паролем
+              </button>
+            </div>
           </div>
         )}
 

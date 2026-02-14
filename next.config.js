@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  // потрібно для Docker (копіюємо .next/standalone + server.js)
   output: 'standalone',
 
   async rewrites() {
-    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const base =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_API_BASE ||
+      'http://localhost:8000'
+
     return [
       {
         source: '/api/:path*',
@@ -14,7 +16,6 @@ const nextConfig = {
       },
       {
         source: '/socket.io/:path*',
-        // Socket.IO is served over HTTP(S) with Upgrade. Use the same backend base URL.
         destination: `${base}/socket.io/:path*`,
       },
     ]

@@ -1,22 +1,23 @@
 /** @type {import('next').NextConfig} */
+const apiBase =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8000'
+
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
 
+  // ВАЖЛИВО: rewrites залишаємо ТІЛЬКИ якщо apiBase реально заданий у Railway.
+  // Якщо env не підхопиться — впаде на localhost.
   async rewrites() {
-    const base =
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      'http://localhost:8000'
-
     return [
       {
         source: '/api/:path*',
-        destination: `${base}/api/:path*`,
+        destination: `${apiBase}/api/:path*`,
       },
       {
         source: '/socket.io/:path*',
-        destination: `${base}/socket.io/:path*`,
+        destination: `${apiBase}/socket.io/:path*`,
       },
     ]
   },

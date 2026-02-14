@@ -1,5 +1,14 @@
-export const API_BASE =
-  (process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000')
+const SERVER_API_BASE =
+  (process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
+    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ||
+    'http://localhost:8000')
+
+function getBase() {
+  // ✅ У БРАУЗЕРІ: тільки /api/... (rewrites зробить проксі на бекенд)
+  if (typeof window !== 'undefined') return ''
+  // ✅ На сервері (SSR/route handlers): можна напряму на бекенд
+  return SERVER_API_BASE
+}
 
 function getToken(explicitToken?: string) {
   if (explicitToken) return explicitToken
@@ -18,7 +27,9 @@ async function parseError(res: Response) {
 
 export async function apiPost<T>(path: string, body: any, token?: string): Promise<T> {
   const t = getToken(token)
-  const res = await fetch(`${API_BASE}${path}`, {
+  const base = getBase()
+
+  const res = await fetch(`${base}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -26,46 +37,43 @@ export async function apiPost<T>(path: string, body: any, token?: string): Promi
     },
     body: JSON.stringify(body),
   })
+
   if (!res.ok) await parseError(res)
   return res.json()
 }
 
 export async function apiGet<T>(path: string, token?: string): Promise<T> {
   const t = getToken(token)
-  const res = await fetch(`${API_BASE}${path}`, {
+  const base = getBase()
+
+  const res = await fetch(`${base}${path}`, {
     method: 'GET',
     headers: {
       ...(t ? { Authorization: `Bearer ${t}` } : {}),
     },
   })
+
   if (!res.ok) await parseError(res)
   return res.json()
 }
 
 /**
- * ✅ Backward-compatible API object used across components.
- * Important: typed as `any` to avoid build breaks when components call helpers
- * that weren't declared yet (getActiveBosses, getShop, etc).
+ * Сумісність зі старими імпортами:
+ * import { api } from '@/lib/api'
  */
 export const api: any = {
-  // generic
   get: <T>(path: string, token?: string) => apiGet<T>(path, token),
   post: <T>(path: string, body: any, token?: string) => apiPost<T>(path, body, token),
 
-  // ---- Auth ----
+  // Auth
+  telegramMiniAppAuth: (init_data: string) => apiPost('/api/auth/telegram', { init_data }),
+  telegramWidgetAuth: (payload: any) => apiPost('/api/auth/telegram-widget', payload),
   me: () => apiGet<{ user: any }>('/api/auth/me'),
 
-  // ---- Bosses ----
+  // Bosses (якщо десь викликається)
   getActiveBosses: () => apiGet<{ bosses: any[] }>('/api/boss/active'),
   attackBoss: (boss_id: number, use_kleynodu: number = 0) =>
     apiPost('/api/boss/attack', { boss_id, use_kleynodu }),
-
-  // (додатково, якщо десь треба)
-  telegramMiniAppAuth: (init_data: string) =>
-    apiPost('/api/auth/telegram', { init_data }),
-  telegramWidgetAuth: (payload: any) =>
-    apiPost('/api/auth/telegram-widget', payload),
 }
 
-// (опційно) якщо десь було: import api from '@/lib/api'
 export default api

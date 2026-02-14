@@ -1,217 +1,115 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useStore } from '@/lib/store'
-import { isTelegram, getInitData, initTelegram } from '@/lib/telegram'
-import { api } from '@/lib/api'
-import { TapGame } from '@/components/TapGame'
-import { DailyFate } from '@/components/DailyFate'
-import { GuildPanel } from '@/components/GuildPanel'
-import { BossBattle } from '@/components/BossBattle'
-import { Shop } from '@/components/Shop'
-import { Navigation } from '@/components/Navigation'
-import { UserBar } from '@/components/UserBar'
-import { Notifications } from '@/components/Notifications'
-import { TelegramLoginWidget } from '@/components/TelegramLoginWidget'
+import { useEffect, useMemo, useState } from 'react'
+import { apiPost } from '@/lib/api'
 
-export default function Home() {
-  const { isAuthenticated, setAuth, activeTab } = useStore()
-  const [loading, setLoading] = useState(true)
+type AuthResponse = {
+  access_token: string
+  token_type: 'bearer'
+  user: any
+  is_new: boolean
+}
+
+export default function Page() {
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const isTelegramMiniApp = useMemo(() => {
+    return typeof window !== 'undefined' && !!(window as any)?.Telegram?.WebApp
+  }, [])
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        if (isTelegram()) {
-          initTelegram()
-          const initData = getInitData()
-          if (initData) {
-            const response = await api.telegramAuth(initData)
-            setAuth(response.access_token, response.user)
+    if (!isTelegramMiniApp) return
 
-            if (response.is_new) {
-              useStore.getState().addNotification({
-                id: `welcome-${Date.now()}`,
-                type: 'success',
-                title: 'Вітаємо!',
-                message: 'Акаунт створено. Можеш копати кургани 😊',
-                duration: 4000,
-              })
-            }
-          }
+    const tg = (window as any).Telegram.WebApp
+    const initData = tg?.initData
+
+    if (!initData) {
+      setErr('Telegram initData порожній. Відкрий гру через Mini App.')
+      return
+    }
+
+    // Автологін/автореєстрація при старті Mini App
+    ;(async () => {
+      try {
+        setErr(null)
+        setLoading(true)
+
+        const res = await apiPost<AuthResponse>('/api/auth/telegram', {
+          init_data: initData,
+        })
+
+        localStorage.setItem('access_token', res.access_token)
+
+        // Якщо новий — ведемо на онбординг/реєстрацію
+        if (res.is_new) {
+          window.location.href = '/onboarding'
+          return
         }
-      } catch (error) {
-        console.error('Auth error:', error)
+
+        // Якщо існуючий — у гру
+        window.location.href = '/game'
+      } catch (e: any) {
+        setErr(e?.message || 'Помилка авторизації Telegram')
       } finally {
         setLoading(false)
       }
-    }
-
-    init()
-  }, [setAuth])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-kurgan-bg">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-pulse">ᛉ</div>
-          <p className="text-kurgan-accent text-xl">Завантаження долі...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <LoginScreen />
-  }
+    })()
+  }, [isTelegramMiniApp])
 
   return (
-    <main className="min-h-screen pb-20">
-      <UserBar />
-      <Notifications />
-      
-      <div className="container mx-auto px-4 py-4">
-        {activeTab === 'dig' && <TapGame />}
-        {activeTab === 'daily' && <DailyFate />}
-        {activeTab === 'guild' && <GuildPanel />}
-        {activeTab === 'boss' && <BossBattle />}
-        {activeTab === 'shop' && <Shop />}
-      </div>
-      
-      <Navigation />
-    </main>
-  )
-}
+    <main className="min-h-screen flex items-start justify-center p-4 pixel-noise">
+      <div className="pixel-border w-full max-w-md p-5">
+        <h1 className="text-2xl mb-4">Прокляті Кургани</h1>
 
-function LoginScreen() {
-  const [mode, setMode] = useState<'telegram' | 'login' | 'register'>('telegram')
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await api.emailLogin(username, password)
-      useStore.getState().setAuth(response.access_token, response.user)
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await api.emailRegister(username, email, password)
-      useStore.getState().setAuth(response.access_token, response.user)
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-kurgan-card border border-kurgan-border rounded-lg p-8 rune-border">
-        <h1 className="text-3xl font-bold text-kurgan-accent text-center mb-2">
-          Прокляті Кургани
-        </h1>
-        <p className="text-kurgan-muted text-center mb-8">
+        <p className="text-sm mb-4 opacity-80">
           Етно-українська гра міфології та долі
         </p>
 
-        {mode === 'telegram' && (
-          <div className="text-center space-y-4">
-            <p className="text-kurgan-text">
-              Увійди через Telegram (один акаунт працює і в Mini App, і в браузері)
-            </p>
-
-            {/* Browser Telegram auth (Login Widget). In Mini App, auth happens automatically через initData. */}
-            <div className="flex justify-center">
-              <TelegramLoginWidget />
+        {isTelegramMiniApp ? (
+          <>
+            <div className="text-sm mb-3 opacity-80">
+              {loading ? 'Входимо через Telegram…' : 'Запуск через Telegram Mini App'}
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {err && (
+              <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
+                {err}
+              </div>
+            )}
 
             <button
-              onClick={() => setMode('login')}
-              className="w-full py-3 bg-kurgan-card border border-kurgan-border text-kurgan-text font-bold rounded hover:border-kurgan-accent transition"
+              className="pixel-btn pixel-btn-primary w-full"
+              onClick={() => window.location.reload()}
+              disabled={loading}
+            >
+              Перезапустити вхід
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm mb-3 opacity-80">
+              У браузері потрібен Telegram Login Widget (або пароль).
+            </p>
+
+            <button
+              className="pixel-btn pixel-btn-primary w-full"
+              onClick={() => (window.location.href = '/login-telegram')}
+            >
+              Увійти через Telegram
+            </button>
+
+            <div className="h-2" />
+
+            <button
+              className="pixel-btn w-full"
+              onClick={() => (window.location.href = '/login')}
             >
               Або увійти паролем
             </button>
-          </div>
-        )}
-
-        {mode === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Логін або email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-3 bg-kurgan-bg border border-kurgan-border rounded text-kurgan-text"
-            />
-            <input
-              type="password"
-              placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 bg-kurgan-bg border border-kurgan-border rounded text-kurgan-text"
-            />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full py-3 bg-kurgan-accent text-kurgan-bg font-bold rounded hover:bg-kurgan-accent-dim transition"
-            >
-              Увійти
-            </button>
-            <p className="text-center text-kurgan-muted text-sm">
-              Немає акаунту?{' '}
-              <button onClick={() => setMode('register')} className="text-kurgan-accent">
-                Зареєструватися
-              </button>
-            </p>
-          </form>
-        )}
-
-        {mode === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Логін"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-3 bg-kurgan-bg border border-kurgan-border rounded text-kurgan-text"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 bg-kurgan-bg border border-kurgan-border rounded text-kurgan-text"
-            />
-            <input
-              type="password"
-              placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 bg-kurgan-bg border border-kurgan-border rounded text-kurgan-text"
-            />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              className="w-full py-3 bg-kurgan-accent text-kurgan-bg font-bold rounded hover:bg-kurgan-accent-dim transition"
-            >
-              Зареєструватися
-            </button>
-            <p className="text-center text-kurgan-muted text-sm">
-              Вже є акаунт?{' '}
-              <button onClick={() => setMode('login')} className="text-kurgan-accent">
-                Увійти
-              </button>
-            </p>
-          </form>
+          </>
         )}
       </div>
-    </div>
+    </main>
   )
 }

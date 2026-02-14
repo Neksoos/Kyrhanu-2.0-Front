@@ -1,29 +1,73 @@
-/* Import the pixelated font from Google Fonts. This ensures that the
- * Press Start 2P typeface is available throughout the application.
- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Піксельний шрифт */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* Base styles for the entire application. These classes set the
- * background and text colours using the custom palette defined in
- * ``tailwind.config.js``. The ``font-pixel`` class applies our
- * pixelated font family.
- */
-html,
-body {
-  @apply bg-kurgan-bg text-kurgan-text font-pixel;
+:root {
+  --k-bg: #f8f4e1;
+  --k-card: #fff7e6;
+  --k-text: #2d2926;
+  --k-muted: #705c53;
+  --k-accent: #b30c12;
+  --k-border: #cfa77d;
 }
 
-/* Utility class for applying a pixelated border that uses a
- * repeating embroidery pattern. It expects the image file
- * ``/pixel-embroidered.png`` to be present in the public directory.
- * ``border-width`` can be customised by adjusting the ``border``
- * property. The transparent border ensures that the background
- * doesn't bleed through the pattern.
- */
+/* Базовий фон + шрифт */
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--k-bg);
+  color: var(--k-text);
+  font-family: "Press Start 2P", monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Легка “зернистість”/піксельність */
+.pixel-noise {
+  position: relative;
+}
+.pixel-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.20) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 4px);
+}
+
+/* Рамка-вишивка (потрібен /public/pixel-embroidered.png) */
 .pixel-border {
-  border: 8px solid transparent;
-  background-image: url('/pixel-embroidered.png');
-  background-repeat: repeat;
-  background-origin: border-box;
-  background-clip: border-box;
+  border: 10px solid transparent;
+  border-image: url('/pixel-embroidered.png') 10 round;
+  background: var(--k-card);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  border-radius: 18px;
+}
+
+/* Кнопки в стилі “піксельних табличок” */
+.pixel-btn {
+  border: 3px solid var(--k-border);
+  background: #ffffff;
+  color: var(--k-text);
+  padding: 12px 14px;
+  border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.14);
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+.pixel-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.14);
+}
+
+.pixel-btn-primary {
+  background: var(--k-accent);
+  color: #fff;
+  border-color: #7c0a0e;
 }

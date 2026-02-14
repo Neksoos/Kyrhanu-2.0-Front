@@ -24,7 +24,7 @@ class ApiClient {
     
     if (response.status === 401) {
       useStore.getState().clearAuth()
-      window.location.href = '/login'
+      window.location.href = '/'
       throw new Error('Session expired')
     }
     
@@ -41,6 +41,14 @@ class ApiClient {
     return this.fetch('/api/auth/telegram', {
       method: 'POST',
       body: JSON.stringify({ init_data: initData }),
+    })
+  }
+
+  // Telegram Login Widget (browser)
+  async telegramWidgetAuth(user: any) {
+    return this.fetch('/api/auth/telegram-widget', {
+      method: 'POST',
+      body: JSON.stringify(user),
     })
   }
   

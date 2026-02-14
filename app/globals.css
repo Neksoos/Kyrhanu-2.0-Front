@@ -1,0 +1,29 @@
+/* Import the pixelated font from Google Fonts. This ensures that the
+ * Press Start 2P typeface is available throughout the application.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Base styles for the entire application. These classes set the
+ * background and text colours using the custom palette defined in
+ * ``tailwind.config.js``. The ``font-pixel`` class applies our
+ * pixelated font family.
+ */
+html,
+body {
+  @apply bg-kurgan-bg text-kurgan-text font-pixel;
+}
+
+/* Utility class for applying a pixelated border that uses a
+ * repeating embroidery pattern. It expects the image file
+ * ``/pixel-embroidered.png`` to be present in the public directory.
+ * ``border-width`` can be customised by adjusting the ``border``
+ * property. The transparent border ensures that the background
+ * doesn't bleed through the pattern.
+ */
+.pixel-border {
+  border: 8px solid transparent;
+  background-image: url('/pixel-embroidered.png');
+  background-repeat: repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}

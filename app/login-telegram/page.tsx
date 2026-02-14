@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { apiPost } from '@/lib/api'
 
 type AuthResponse = {
@@ -12,91 +12,115 @@ type AuthResponse = {
 
 declare global {
   interface Window {
+    Telegram?: any
     onTelegramAuth?: (user: any) => void
   }
 }
 
 export default function LoginTelegramPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [botUsername, setBotUsername] = useState<string>('')
-  const [widgetReady, setWidgetReady] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    // беремо username з runtime-конфіга, щоб не залежати від build env
-    ;(async () => {
-      try {
-        const res = await fetch('/api/public-config', { cache: 'no-store' })
-        const data = await res.json()
-        if (!data?.tgBotUsername) {
-          setError('Не задано TG bot username у Railway Variables')
-          return
-        }
-        setBotUsername(data.tgBotUsername)
-      } catch {
-        setError('Не вдалося завантажити public-config')
-      }
-    })()
+  const isTelegramMiniApp = useMemo(() => {
+    return typeof window !== 'undefined' && !!(window as any)?.Telegram?.WebApp
+  }, [])
+
+  // беремо або NEXT_PUBLIC_TG_BOT_USERNAME або NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+  const botUsername = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    // @ts-ignore
+    return (
+      process.env.NEXT_PUBLIC_TG_BOT_USERNAME ||
+      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
+      ''
+    )
   }, [])
 
   useEffect(() => {
-    if (!botUsername) return
+    // ❌ якщо це Mini App — не показуємо віджет, повертаємо на головну
+    if (isTelegramMiniApp) {
+      window.location.replace('/')
+      return
+    }
+  }, [isTelegramMiniApp])
 
-    window.onTelegramAuth = async (user: any) => {
+  useEffect(() => {
+    if (isTelegramMiniApp) return
+
+    if (!botUsername) {
+      setErr(
+        'Не задано NEXT_PUBLIC_TG_BOT_USERNAME (або NEXT_PUBLIC_TELEGRAM_BOT_USERNAME) у змінних середовища.'
+      )
+      return
+    }
+
+    // глобальний callback, який викличе Telegram widget
+    window.onTelegramAuth = async (tgUser: any) => {
       try {
-        setError(null)
-        const res = await apiPost<AuthResponse>('/api/auth/telegram-widget', user)
+        setErr(null)
+        setLoading(true)
+
+        // ✅ Браузер логін ТІЛЬКИ через widget payload
+        const res = await apiPost<AuthResponse>('/api/auth/telegram-widget', tgUser)
 
         localStorage.setItem('access_token', res.access_token)
-        window.location.href = res.is_new ? '/onboarding' : '/game'
+
+        if (res.is_new) {
+          window.location.href = '/onboarding'
+          return
+        }
+
+        window.location.href = '/game'
       } catch (e: any) {
-        setError(e?.message || 'Помилка авторизації Telegram Widget')
+        setErr(e?.message || 'Помилка авторизації Telegram (Widget)')
+      } finally {
+        setLoading(false)
       }
     }
 
-    const container = document.getElementById('tg-widget')
-    if (!container) return
-
-    container.innerHTML = '' // щоб не дублювався при навігації
-
+    // вставляємо скрипт віджета
     const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
     script.async = true
-    script.onload = () => setWidgetReady(true)
-
+    script.src = 'https://telegram.org/js/telegram-widget.js?22'
     script.setAttribute('data-telegram-login', botUsername)
     script.setAttribute('data-size', 'large')
-    script.setAttribute('data-userpic', 'true')
     script.setAttribute('data-radius', '10')
     script.setAttribute('data-request-access', 'write')
     script.setAttribute('data-onauth', 'onTelegramAuth(user)')
 
-    container.appendChild(script)
+    const mount = document.getElementById('tg-widget-mount')
+    mount?.appendChild(script)
 
     return () => {
-      delete window.onTelegramAuth
-      container.innerHTML = ''
+      try {
+        mount?.removeChild(script)
+      } catch {}
+      window.onTelegramAuth = undefined
     }
-  }, [botUsername])
+  }, [botUsername, isTelegramMiniApp])
 
   return (
     <main className="min-h-screen flex items-start justify-center p-4 pixel-noise">
       <div className="pixel-border w-full max-w-md p-5">
-        <h1 className="text-xl mb-4">Вхід через Telegram</h1>
+        <h1 className="text-2xl mb-2">Вхід через Telegram</h1>
 
-        {error && (
+        <p className="text-sm mb-4 opacity-80">
+          Це працює у браузері через Telegram Login Widget.
+        </p>
+
+        {err && (
           <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
-            {error}
+            {err}
           </div>
         )}
 
-        {!error && !widgetReady && (
-          <div className="text-sm mb-3 opacity-80">Завантажуємо Telegram Widget…</div>
-        )}
+        <div id="tg-widget-mount" className="mb-4" />
 
-        <div id="tg-widget" className="flex justify-center" />
-
-        <div className="h-4" />
-        <button className="pixel-btn w-full" onClick={() => (window.location.href = '/')}>
+        <button
+          className="pixel-btn w-full"
+          onClick={() => (window.location.href = '/')}
+          disabled={loading}
+        >
           Назад
         </button>
       </div>

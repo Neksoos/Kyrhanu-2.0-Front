@@ -30,7 +30,7 @@ class ApiClient {
     
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(error.detail || 'Request failed')
+      throw new Error(typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail || error))
     }
     
     return response.json()
@@ -59,13 +59,12 @@ class ApiClient {
   }
   
   // Game
-  async tap(clientTimestamp: number, sequence: number, hmac: string, nonce: string) {
+  async tap(clientTimestamp: number, sequence: number, nonce: string) {
     return this.fetch('/api/game/tap', {
       method: 'POST',
       body: JSON.stringify({
         client_timestamp: clientTimestamp,
         sequence_number: sequence,
-        hmac_signature: hmac,
         nonce,
       }),
     })

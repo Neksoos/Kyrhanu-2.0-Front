@@ -1,18 +1,9 @@
 /**
- * HMAC signing for anti-cheat.
+ * Client helpers for anti-cheat.
+ *
+ * Note: the server does not rely on any client-held secret.
+ * We only generate a per-action nonce to make replay harder.
  */
-import CryptoJS from 'crypto-js'
-
-export function signAction(
-  userId: number,
-  sequence: number,
-  timestamp: number,
-  nonce: string,
-  key: string
-): string {
-  const message = `${userId}:${sequence}:${timestamp}:${nonce}`
-  return CryptoJS.HmacSHA256(message, key).toString().substring(0, 32)
-}
 
 export function generateNonce(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)))

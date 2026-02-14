@@ -25,7 +25,7 @@ export default function Home() {
           const initData = getInitData()
           if (initData) {
             const response = await api.telegramAuth(initData)
-            setAuth(response.access_token, response.user, response.hmac_key)
+            setAuth(response.access_token, response.user)
           }
         }
       } catch (error) {
@@ -82,7 +82,7 @@ function LoginScreen() {
     e.preventDefault()
     try {
       const response = await api.emailLogin(username, password)
-      useStore.getState().setAuth(response.access_token, response.user, response.hmac_key)
+      useStore.getState().setAuth(response.access_token, response.user)
     } catch (err: any) {
       setError(err.message)
     }
@@ -92,7 +92,7 @@ function LoginScreen() {
     e.preventDefault()
     try {
       const response = await api.emailRegister(username, email, password)
-      useStore.getState().setAuth(response.access_token, response.user, response.hmac_key)
+      useStore.getState().setAuth(response.access_token, response.user)
     } catch (err: any) {
       setError(err.message)
     }

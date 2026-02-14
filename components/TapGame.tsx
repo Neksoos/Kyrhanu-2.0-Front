@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@/lib/store'
 import { api } from '@/lib/api'
-import { signAction, generateNonce } from '@/lib/crypto'
+import { generateNonce } from '@/lib/crypto'
 import { haptic } from '@/lib/telegram'
 
 interface TapEffect {
@@ -14,7 +14,7 @@ interface TapEffect {
 }
 
 export function TapGame() {
-  const { user, hmacKey, energy, maxEnergy, updateEnergy, updateUser, incrementTapSequence } = useStore()
+  const { user, energy, maxEnergy, updateEnergy, updateUser, incrementTapSequence } = useStore()
   const [tapping, setTapping] = useState(false)
   const [effects, setEffects] = useState<TapEffect[]>([])
   const [cooldown, setCooldown] = useState(0)
@@ -35,7 +35,7 @@ export function TapGame() {
   }, [updateEnergy])
 
   const handleTap = useCallback(async (e: React.MouseEvent | React.TouchEvent) => {
-    if (energy <= 0 || cooldown > 0 || !hmacKey || !user) return
+    if (energy <= 0 || cooldown > 0 || !user) return
 
     setTapping(true)
     setCooldown(50) // 50ms cooldown
@@ -71,10 +71,8 @@ export function TapGame() {
     const sequence = incrementTapSequence()
     const timestamp = Date.now()
     const nonce = generateNonce()
-    const signature = signAction(user.id, sequence, timestamp, nonce, hmacKey)
-
     try {
-      const result = await api.tap(timestamp, sequence, signature, nonce)
+      const result = await api.tap(timestamp, sequence, nonce)
       
       updateEnergy(result.energy_left, result.max_energy)
       updateUser({
@@ -111,7 +109,7 @@ export function TapGame() {
     }
 
     setTimeout(() => setTapping(false), 100)
-  }, [energy, cooldown, hmacKey, user, updateEnergy, updateUser, incrementTapSequence])
+  }, [energy, cooldown, user, updateEnergy, updateUser, incrementTapSequence])
 
   // Cooldown timer
   useEffect(() => {

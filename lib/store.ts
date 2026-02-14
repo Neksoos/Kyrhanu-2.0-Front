@@ -4,7 +4,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface User {
+export interface User {
   id: number
   username: string
   display_name: string
@@ -19,24 +19,31 @@ interface User {
   referral_code: string
 }
 
-interface GameState {
+export interface Notification {
+  id: string
+  type: 'success' | 'error' | 'info' | 'reward'
+  title: string
+  message: string
+  duration?: number
+}
+
+export interface GameState {
   // Auth
   token: string | null
-  hmacKey: string | null
   user: User | null
   isAuthenticated: boolean
-  
+
   // Game state
   energy: number
   maxEnergy: number
   lastTapSequence: number
-  
+
   // UI
   activeTab: 'dig' | 'daily' | 'guild' | 'boss' | 'shop'
   notifications: Notification[]
-  
+
   // Actions
-  setAuth: (token: string, user: User, hmacKey: string) => void
+  setAuth: (token: string, user: User) => void
   clearAuth: () => void
   updateUser: (updates: Partial<User>) => void
   updateEnergy: (energy: number, max?: number) => void
@@ -46,77 +53,75 @@ interface GameState {
   removeNotification: (id: string) => void
 }
 
-interface Notification {
-  id: string
-  type: 'success' | 'error' | 'info' | 'reward'
-  title: string
-  message: string
-  duration?: number
-}
-
 export const useStore = create<GameState>()(
   persist(
     (set, get) => ({
       token: null,
-      hmacKey: null,
       user: null,
       isAuthenticated: false,
+
       energy: 0,
       maxEnergy: 100,
       lastTapSequence: 0,
+
       activeTab: 'dig',
       notifications: [],
-      
-      setAuth: (token, user, hmacKey) => set({
-        token,
-        user,
-        hmacKey,
-        isAuthenticated: true,
-        energy: user.energy,
-        maxEnergy: user.max_energy,
-      }),
-      
-      clearAuth: () => set({
-        token: null,
-        user: null,
-        hmacKey: null,
-        isAuthenticated: false,
-        energy: 0,
-        maxEnergy: 100,
-        lastTapSequence: 0,
-      }),
-      
-      updateUser: (updates) => set((state) => ({
-        user: state.user ? { ...state.user, ...updates } : null
-      })),
-      
-      updateEnergy: (energy, max) => set((state) => ({
-        energy,
-        maxEnergy: max ?? state.maxEnergy
-      })),
-      
+
+      setAuth: (token, user) =>
+        set({
+          token,
+          user,
+          isAuthenticated: true,
+          energy: user.energy,
+          maxEnergy: user.max_energy,
+          lastTapSequence: 0,
+        }),
+
+      clearAuth: () =>
+        set({
+          token: null,
+          user: null,
+          isAuthenticated: false,
+          energy: 0,
+          maxEnergy: 100,
+          lastTapSequence: 0,
+        }),
+
+      updateUser: (updates) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
+
+      updateEnergy: (energy, max) =>
+        set((state) => ({
+          energy,
+          maxEnergy: max ?? state.maxEnergy,
+        })),
+
       incrementTapSequence: () => {
         const newSeq = get().lastTapSequence + 1
         set({ lastTapSequence: newSeq })
         return newSeq
       },
-      
+
       setActiveTab: (tab) => set({ activeTab: tab }),
-      
-      addNotification: (notification) => set((state) => ({
-        notifications: [...state.notifications, notification]
-      })),
-      
-      removeNotification: (id) => set((state) => ({
-        notifications: state.notifications.filter(n => n.id !== id)
-      })),
+
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [...state.notifications, notification],
+        })),
+
+      removeNotification: (id) =>
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n.id !== id),
+        })),
     }),
     {
       name: 'cursed-mounds-storage',
       partialize: (state) => ({
         token: state.token,
         user: state.user,
-        hmacKey: state.hmacKey,
+        lastTapSequence: state.lastTapSequence,
       }),
     }
   )

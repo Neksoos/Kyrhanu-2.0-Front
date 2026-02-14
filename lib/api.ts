@@ -1,79 +1,52 @@
-const SERVER_API_BASE =
-  (process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ||
-    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ||
-    'http://localhost:8000')
+// src/lib/api.ts
+const RAW_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  ''
 
-function getBase() {
-  // ✅ У БРАУЗЕРІ: тільки /api/... (rewrites зробить проксі на бекенд)
-  if (typeof window !== 'undefined') return ''
-  // ✅ На сервері (SSR/route handlers): можна напряму на бекенд
-  return SERVER_API_BASE
-}
+export const API_BASE = RAW_BASE.replace(/\/$/, '')
 
-function getToken(explicitToken?: string) {
-  if (explicitToken) return explicitToken
-  if (typeof window === 'undefined') return undefined
-  return localStorage.getItem('access_token') || undefined
+function makeUrl(path: string) {
+  const p = path.startsWith('/') ? path : `/${path}`
+
+  // Якщо API_BASE не заданий (dev) — йдемо в same-origin /api
+  if (!API_BASE) return p
+
+  // Якщо передали вже повний URL
+  if (p.startsWith('http://') || p.startsWith('https://')) return p
+
+  return `${API_BASE}${p}`
 }
 
 async function parseError(res: Response) {
-  let msg = `HTTP ${res.status}`
-  try {
-    const data = await res.json()
-    msg = data?.detail || data?.message || msg
-  } catch {}
-  throw new Error(msg)
+  const text = await res.text().catch(() => '')
+  return text || `HTTP ${res.status}`
 }
 
-export async function apiPost<T>(path: string, body: any, token?: string): Promise<T> {
-  const t = getToken(token)
-  const base = getBase()
+export async function apiGet<T>(path: string, token?: string) {
+  const res = await fetch(makeUrl(path), {
+    method: 'GET',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+  })
 
-  const res = await fetch(`${base}${path}`, {
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as T
+}
+
+export async function apiPost<T>(path: string, body: any, token?: string) {
+  const res = await fetch(makeUrl(path), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(body),
+    credentials: 'include',
   })
 
-  if (!res.ok) await parseError(res)
-  return res.json()
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as T
 }
-
-export async function apiGet<T>(path: string, token?: string): Promise<T> {
-  const t = getToken(token)
-  const base = getBase()
-
-  const res = await fetch(`${base}${path}`, {
-    method: 'GET',
-    headers: {
-      ...(t ? { Authorization: `Bearer ${t}` } : {}),
-    },
-  })
-
-  if (!res.ok) await parseError(res)
-  return res.json()
-}
-
-/**
- * Сумісність зі старими імпортами:
- * import { api } from '@/lib/api'
- */
-export const api: any = {
-  get: <T>(path: string, token?: string) => apiGet<T>(path, token),
-  post: <T>(path: string, body: any, token?: string) => apiPost<T>(path, body, token),
-
-  // Auth
-  telegramMiniAppAuth: (init_data: string) => apiPost('/api/auth/telegram', { init_data }),
-  telegramWidgetAuth: (payload: any) => apiPost('/api/auth/telegram-widget', payload),
-  me: () => apiGet<{ user: any }>('/api/auth/me'),
-
-  // Bosses (якщо десь викликається)
-  getActiveBosses: () => apiGet<{ bosses: any[] }>('/api/boss/active'),
-  attackBoss: (boss_id: number, use_kleynodu: number = 0) =>
-    apiPost('/api/boss/attack', { boss_id, use_kleynodu }),
-}
-
-export default api

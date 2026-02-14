@@ -19,14 +19,39 @@ declare global {
 export default function LoginTelegramPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [botUsername, setBotUsername] = useState<string>('')
 
-  const botUsername = useMemo(() => process.env.NEXT_PUBLIC_TG_BOT_USERNAME, [])
+  // build-time (може бути пусто у проді через кеш/збірку)
+  const buildBot = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_TG_BOT_USERNAME ||
+      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
+      '',
+    []
+  )
 
   useEffect(() => {
-    if (!botUsername) {
-      setError('Не задано NEXT_PUBLIC_TG_BOT_USERNAME у Railway/ENV')
+    // 1) пробуємо взяти з build-time
+    if (buildBot) {
+      setBotUsername(buildBot)
       return
     }
+
+    // 2) якщо нема — беремо з runtime через server route
+    ;(async () => {
+      try {
+        const res = await fetch('/api/public-config', { cache: 'no-store' })
+        const data = await res.json()
+        if (data?.tgBotUsername) setBotUsername(data.tgBotUsername)
+        else setError('Не задано TG bot username у Railway Variables')
+      } catch {
+        setError('Не вдалося завантажити public-config')
+      }
+    })()
+  }, [buildBot])
+
+  useEffect(() => {
+    if (!botUsername) return
 
     window.onTelegramAuth = async (user: any) => {
       try {

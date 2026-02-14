@@ -27,6 +27,16 @@ export default function Home() {
           if (initData) {
             const response = await api.telegramAuth(initData)
             setAuth(response.access_token, response.user)
+
+            if (response.is_new) {
+              useStore.getState().addNotification({
+                id: `welcome-${Date.now()}`,
+                type: 'success',
+                title: 'Вітаємо!',
+                message: 'Акаунт створено. Можеш копати кургани 😊',
+                duration: 4000,
+              })
+            }
           }
         }
       } catch (error) {
@@ -115,16 +125,19 @@ function LoginScreen() {
               Увійди через Telegram (один акаунт працює і в Mini App, і в браузері)
             </p>
 
-            <TelegramLoginWidget />
-
-            <div className="pt-2">
-              <button
-                onClick={() => setMode('login')}
-                className="w-full py-3 bg-kurgan-accent text-kurgan-bg font-bold rounded hover:bg-kurgan-accent-dim transition"
-              >
-                Або увійти паролем
-              </button>
+            {/* Browser Telegram auth (Login Widget). In Mini App, auth happens automatically через initData. */}
+            <div className="flex justify-center">
+              <TelegramLoginWidget />
             </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <button
+              onClick={() => setMode('login')}
+              className="w-full py-3 bg-kurgan-card border border-kurgan-border text-kurgan-text font-bold rounded hover:border-kurgan-accent transition"
+            >
+              Або увійти паролем
+            </button>
           </div>
         )}
 

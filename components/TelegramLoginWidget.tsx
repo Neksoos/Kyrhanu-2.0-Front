@@ -12,26 +12,39 @@ declare global {
 
 /**
  * Telegram Login Widget for browser auth.
- * In Telegram Mini App you should use initData flow instead.
+ * Uses NEXT_PUBLIC_TELEGRAM_BOT_USERNAME (MUST be without "@").
  */
 export function TelegramLoginWidget() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+    const raw = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || ''
+    const botUsername = raw.replace(/^@/, '').trim()
+
     if (!botUsername) {
-      setError('NEXT_PUBLIC_TELEGRAM_BOT_USERNAME не заданий')
+      setError('NEXT_PUBLIC_TELEGRAM_BOT_USERNAME не задано (має бути без @)')
       return
     }
-    if (!containerRef.current) return
 
+    if (!containerRef.current) return
     containerRef.current.innerHTML = ''
 
     window.onTelegramAuth = async (user: any) => {
       try {
+        setError('')
         const res = await api.telegramWidgetAuth(user)
         useStore.getState().setAuth(res.access_token, res.user)
+
+        if (res.is_new) {
+          useStore.getState().addNotification({
+            id: `welcome-${Date.now()}`,
+            type: 'success',
+            title: 'Вітаємо!',
+            message: 'Акаунт створено. Можеш копати кургани 😊',
+            duration: 4000,
+          })
+        }
       } catch (e: any) {
         console.error(e)
         setError(e?.message || 'Telegram auth failed')

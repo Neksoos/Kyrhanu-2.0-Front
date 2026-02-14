@@ -24,13 +24,22 @@ class ApiClient {
     
     if (response.status === 401) {
       useStore.getState().clearAuth()
-      window.location.href = '/'
+      window.location.href = '/login'
       throw new Error('Session expired')
     }
     
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail || error))
+      let errorBody: any = null
+      try {
+        errorBody = await response.json()
+      } catch {
+        // ignore
+      }
+
+      const detail = errorBody?.detail ?? errorBody
+      if (typeof detail === 'string') throw new Error(detail)
+      if (Array.isArray(detail)) throw new Error(detail.map((d) => d?.msg || JSON.stringify(d)).join('; '))
+      throw new Error(JSON.stringify(detail || errorBody || { status: response.status }))
     }
     
     return response.json()
@@ -44,7 +53,6 @@ class ApiClient {
     })
   }
 
-  // Telegram Login Widget (browser)
   async telegramWidgetAuth(user: any) {
     return this.fetch('/api/auth/telegram-widget', {
       method: 'POST',
@@ -55,7 +63,7 @@ class ApiClient {
   async emailLogin(username: string, password: string) {
     return this.fetch('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username_or_email: username, password }),
+      body: JSON.stringify({ username, password }),
     })
   }
   

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isMiniApp, getInitData, ensureTelegramReady, telegramDebugInfo } from "@/lib/telegram";
+import { getInitData, ensureTelegramReady, telegramDebugInfo, waitForTelegramWebApp } from "@/lib/telegram";
 import { api, loadAccessTokenFromStorage, setAccessToken } from "@/lib/api";
 import { LoadingRune } from "@/components/LoadingRune";
 import { Toast } from "@/components/Toast";
@@ -12,10 +12,11 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      loadAccessTokenFromStorage();
+      const stored = loadAccessTokenFromStorage();
 
-      // Mini App flow
-      if (isMiniApp()) {
+      // Mini App flow (чекаємо трохи, поки Telegram WebApp API стане доступним)
+      const tg = await waitForTelegramWebApp();
+      if (tg) {
         ensureTelegramReady();
         setDbg(telegramDebugInfo());
 
@@ -42,7 +43,7 @@ export default function Home() {
       }
 
       // Browser flow
-      if (loadAccessTokenFromStorage()) {
+      if (stored) {
         try {
           await api.me();
           window.location.href = "/play";

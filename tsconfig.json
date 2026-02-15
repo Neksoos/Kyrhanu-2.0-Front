@@ -6,11 +6,19 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "jsx": "preserve",
-    "types": ["node"]
+    "types": ["node"],
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+
+    "plugins": [{ "name": "next" }]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

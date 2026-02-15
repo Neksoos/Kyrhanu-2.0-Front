@@ -5,7 +5,7 @@ import { api, setAccessToken } from "@/lib/api";
 import { PixelCard } from "@/components/PixelCard";
 import { PixelButton } from "@/components/PixelButton";
 import { Toast } from "@/components/Toast";
-import { isMiniApp, telegramDebugInfo } from "@/lib/telegram";
+import { telegramDebugInfo, waitForTelegramWebApp } from "@/lib/telegram";
 import type { TelegramWidgetUser } from "@/lib/telegram";
 
 const BOT_USERNAME = process.env.NEXT_PUBLIC_TG_BOT_USERNAME!;
@@ -15,42 +15,59 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [toast, setToast] = useState<{ kind: "info" | "error"; msg: string } | null>(null);
 
-  const widgetId = useMemo(() => `tg-widget-${Math.random().toString(16).slice(2)}`, []);
-  const mini = useMemo(() => isMiniApp(), []);
+  const [mini, setMini] = useState(false);
   const [miniDbg, setMiniDbg] = useState<any>(null);
 
+  const widgetId = useMemo(() => `tg-widget-${Math.random().toString(16).slice(2)}`, []);
+
   useEffect(() => {
-    if (mini) {
-      setMiniDbg(telegramDebugInfo());
-      return;
-    }
+    let disposed = false;
+    let injectedScript: HTMLScriptElement | null = null;
 
-    window.onTelegramAuth = async (user: TelegramWidgetUser) => {
-      try {
-        const res = await api.auth.telegramWidget(user);
-        setAccessToken(res.accessToken);
-        await api.me();
-        window.location.href = "/play";
-      } catch (e: any) {
-        setToast({ kind: "error", msg: e.message ?? "Telegram login failed" });
+    (async () => {
+      // Даємо Telegram WebApp API шанс з'явитись (інакше Mini App помилково сприймається як браузер)
+      const tg = await waitForTelegramWebApp(600);
+      if (disposed) return;
+
+      const isMini = Boolean(tg);
+      setMini(isMini);
+
+      if (isMini) {
+        setMiniDbg(telegramDebugInfo());
+        return;
       }
-    };
 
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute("data-telegram-login", BOT_USERNAME);
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "0");
-    script.setAttribute("data-onauth", "onTelegramAuth(user)");
-    script.setAttribute("data-request-access", "write");
-    const el = document.getElementById(widgetId);
-    el?.appendChild(script);
+      window.onTelegramAuth = async (user: TelegramWidgetUser) => {
+        try {
+          const res = await api.auth.telegramWidget(user);
+          setAccessToken(res.accessToken);
+          await api.me();
+          window.location.href = "/play";
+        } catch (e: any) {
+          setToast({ kind: "error", msg: e.message ?? "Telegram login failed" });
+        }
+      };
+
+      injectedScript = document.createElement("script");
+      injectedScript.async = true;
+      injectedScript.src = "https://telegram.org/js/telegram-widget.js?22";
+      injectedScript.setAttribute("data-telegram-login", BOT_USERNAME);
+      injectedScript.setAttribute("data-size", "large");
+      injectedScript.setAttribute("data-radius", "0");
+      injectedScript.setAttribute("data-onauth", "onTelegramAuth(user)");
+      injectedScript.setAttribute("data-request-access", "write");
+      const el = document.getElementById(widgetId);
+      el?.appendChild(injectedScript);
+    })();
 
     return () => {
+      disposed = true;
       delete window.onTelegramAuth;
+      try {
+        injectedScript?.remove();
+      } catch {}
     };
-  }, [widgetId, mini]);
+  }, [widgetId]);
 
   return (
     <div className="min-h-screen p-6 max-w-3xl mx-auto space-y-4">

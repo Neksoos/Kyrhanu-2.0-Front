@@ -2,22 +2,18 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { apiPost } from '@/lib/api'
+import { apiPost, type AuthResponse as ApiAuthResponse } from '@/lib/api'
 
-type AuthResponse = {
-  access_token: string
-  token_type: 'bearer'
-  user: any
-  is_new: boolean
+type AuthResponse = ApiAuthResponse & {
+  // backward-compat for older backend / frontend naming
+  is_new?: boolean
 }
 
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: any) => void
-  }
-}
-
-export default function TelegramLoginWidget() {
+export default function TelegramLoginWidget({
+  onAuthed,
+}: {
+  onAuthed?: (res: AuthResponse) => void
+}) {
   const ref = useRef<HTMLDivElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -30,7 +26,7 @@ export default function TelegramLoginWidget() {
   useEffect(() => {
     if (!ref.current) return
     if (!botUsername) {
-      setErr('Не задано NEXT_PUBLIC_TG_BOT_USERNAME у ENV')
+      setErr('Не задано NEXT_PUBLIC_TG_BOT_USERNAME (або NEXT_PUBLIC_TELEGRAM_BOT_USERNAME) у ENV')
       return
     }
 
@@ -40,16 +36,14 @@ export default function TelegramLoginWidget() {
         setErr(null)
         setLoading(true)
 
+        // Telegram widget передає user + hash + auth_date в одному обʼєкті.
         const res = await apiPost<AuthResponse>('/api/auth/telegram-widget', user)
 
         localStorage.setItem('access_token', res.access_token)
+        onAuthed?.(res)
 
-        if (res.is_new) {
-          window.location.href = '/onboarding'
-          return
-        }
-
-        window.location.href = '/game'
+        const isNew = Boolean((res as any).is_new_user ?? (res as any).is_new)
+        window.location.href = isNew ? '/onboarding' : '/game'
       } catch (e: any) {
         setErr(e?.message || 'Помилка Telegram Widget авторизації')
       } finally {
@@ -74,7 +68,7 @@ export default function TelegramLoginWidget() {
     return () => {
       window.onTelegramAuth = undefined
     }
-  }, [botUsername])
+  }, [botUsername, onAuthed])
 
   return (
     <div>
@@ -86,11 +80,7 @@ export default function TelegramLoginWidget() {
 
       <div ref={ref} />
 
-      {loading && (
-        <div className="text-sm mt-3 opacity-80">
-          Входимо через Telegram…
-        </div>
-      )}
+      {loading && <div className="text-sm mt-3 opacity-80">Входимо через Telegram…</div>}
     </div>
   )
 }

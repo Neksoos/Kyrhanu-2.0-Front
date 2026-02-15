@@ -5,6 +5,7 @@ import { api, setAccessToken } from "@/lib/api";
 import { PixelCard } from "@/components/PixelCard";
 import { PixelButton } from "@/components/PixelButton";
 import { Toast } from "@/components/Toast";
+import { isMiniApp, telegramDebugInfo } from "@/lib/telegram";
 import type { TelegramWidgetUser } from "@/lib/telegram";
 
 const BOT_USERNAME = process.env.NEXT_PUBLIC_TG_BOT_USERNAME!;
@@ -16,8 +17,17 @@ export default function LoginPage() {
   const [toast, setToast] = useState<{ kind: "info" | "error"; msg: string } | null>(null);
 
   const widgetId = useMemo(() => `tg-widget-${Math.random().toString(16).slice(2)}`, []);
+  const [miniDbg, setMiniDbg] = useState<any>(null);
+  const mini = useMemo(() => isMiniApp(), []);
 
   useEffect(() => {
+    if (mini) {
+      setMiniDbg(telegramDebugInfo());
+      // In Mini App ми не показуємо Telegram Widget (він для браузера).
+      // Якщо користувач тут, значить initData не дійшов або відкрито як internal browser.
+      return;
+    }
+
     // Telegram widget callback
     window.onTelegramAuth = async (user: TelegramWidgetUser) => {
       try {
@@ -45,7 +55,7 @@ export default function LoginPage() {
     return () => {
       delete window.onTelegramAuth;
     };
-  }, [widgetId]);
+  }, [widgetId, mini]);
 
   return (
     <div className="min-h-screen p-6 max-w-3xl mx-auto space-y-4">
@@ -57,10 +67,25 @@ export default function LoginPage() {
       </div>
 
       <PixelCard title="Telegram">
-        <div id={widgetId} />
-        <div className="text-xs text-[var(--muted)] mt-2">
-          Якщо ви вже залогінені email/password, натискання Telegram Widget **прикріпить telegram_id** до вашого акаунта (linking).
-        </div>
+        {mini ? (
+          <div className="text-sm text-[var(--muted)]">
+            Ви відкрили гру в Telegram, але <b>initData не передано</b>, тому авто-логін не спрацював.
+            <div className="mt-2 text-xs">
+              Відкрий гру через <b>кнопку WebApp/Menu у боті</b> або через <b>t.me/&lt;bot&gt;?startapp=...</b>.
+              Після цього авто-вхід запрацює.
+            </div>
+            {miniDbg ? (
+              <pre className="mt-3 text-[10px] whitespace-pre-wrap break-words">{JSON.stringify(miniDbg, null, 2)}</pre>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <div id={widgetId} />
+            <div className="text-xs text-[var(--muted)] mt-2">
+              Якщо ви вже залогінені email/password, натискання Telegram Widget **прикріпить telegram_id** до вашого акаунта (linking).
+            </div>
+          </>
+        )}
       </PixelCard>
 
       <PixelCard title="Email / Password">

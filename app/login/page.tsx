@@ -13,22 +13,18 @@ const BOT_USERNAME = process.env.NEXT_PUBLIC_TG_BOT_USERNAME!;
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [toast, setToast] = useState<{ kind: "info" | "error"; msg: string } | null>(null);
 
   const widgetId = useMemo(() => `tg-widget-${Math.random().toString(16).slice(2)}`, []);
-  const [miniDbg, setMiniDbg] = useState<any>(null);
   const mini = useMemo(() => isMiniApp(), []);
+  const [miniDbg, setMiniDbg] = useState<any>(null);
 
   useEffect(() => {
     if (mini) {
       setMiniDbg(telegramDebugInfo());
-      // In Mini App ми не показуємо Telegram Widget (він для браузера).
-      // Якщо користувач тут, значить initData не дійшов або відкрито як internal browser.
       return;
     }
 
-    // Telegram widget callback
     window.onTelegramAuth = async (user: TelegramWidgetUser) => {
       try {
         const res = await api.auth.telegramWidget(user);
@@ -40,7 +36,6 @@ export default function LoginPage() {
       }
     };
 
-    // Inject widget script
     const script = document.createElement("script");
     script.async = true;
     script.src = "https://telegram.org/js/telegram-widget.js?22";
@@ -69,10 +64,9 @@ export default function LoginPage() {
       <PixelCard title="Telegram">
         {mini ? (
           <div className="text-sm text-[var(--muted)]">
-            Ви відкрили гру в Telegram, але <b>initData не передано</b>, тому авто-логін не спрацював.
+            Ви в Telegram, але <b>initData не передано</b>, тому авто-логін не спрацював.
             <div className="mt-2 text-xs">
               Відкрий гру через <b>кнопку WebApp/Menu у боті</b> або через <b>t.me/&lt;bot&gt;?startapp=...</b>.
-              Після цього авто-вхід запрацює.
             </div>
             {miniDbg ? (
               <pre className="mt-3 text-[10px] whitespace-pre-wrap break-words">{JSON.stringify(miniDbg, null, 2)}</pre>
@@ -82,7 +76,7 @@ export default function LoginPage() {
           <>
             <div id={widgetId} />
             <div className="text-xs text-[var(--muted)] mt-2">
-              Якщо ви вже залогінені email/password, натискання Telegram Widget **прикріпить telegram_id** до вашого акаунта (linking).
+              Якщо ви вже залогінені email/password — Telegram Widget **прикріпить telegram_id** до вашого акаунта (linking).
             </div>
           </>
         )}
@@ -103,6 +97,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+
           <div className="flex gap-2 flex-wrap">
             <PixelButton
               onClick={async () => {
@@ -118,6 +113,7 @@ export default function LoginPage() {
             >
               Увійти
             </PixelButton>
+
             <PixelButton
               variant="ghost"
               onClick={async () => {

@@ -1,14 +1,17 @@
 // lib/telegram.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export function getTelegramWebApp(): any | null {
+  if (typeof window === 'undefined') return null
+  return (window as any)?.Telegram?.WebApp || null
+}
+
 export function isTelegramMiniApp(): boolean {
-  if (typeof window === 'undefined') return false
-  return !!(window as any)?.Telegram?.WebApp
+  return !!getTelegramWebApp()
 }
 
 export function getTelegramInitData(): string {
-  if (typeof window === 'undefined') return ''
-  const tg = (window as any)?.Telegram?.WebApp
+  const tg = getTelegramWebApp()
   return tg?.initData || ''
 }
 
@@ -19,21 +22,21 @@ export function getTelegramInitData(): string {
 export const haptic = {
   impact: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'light') => {
     try {
-      const hf = (window as any)?.Telegram?.WebApp?.HapticFeedback
+      const hf = getTelegramWebApp()?.HapticFeedback
       hf?.impactOccurred?.(style)
     } catch {}
   },
 
   notification: (type: 'error' | 'success' | 'warning' = 'success') => {
     try {
-      const hf = (window as any)?.Telegram?.WebApp?.HapticFeedback
+      const hf = getTelegramWebApp()?.HapticFeedback
       hf?.notificationOccurred?.(type)
     } catch {}
   },
 
   selection: () => {
     try {
-      const hf = (window as any)?.Telegram?.WebApp?.HapticFeedback
+      const hf = getTelegramWebApp()?.HapticFeedback
       hf?.selectionChanged?.()
     } catch {}
   },

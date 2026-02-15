@@ -1,52 +1,88 @@
-// src/lib/api.ts
-const RAW_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  ''
-
-export const API_BASE = RAW_BASE.replace(/\/$/, '')
-
-function makeUrl(path: string) {
-  const p = path.startsWith('/') ? path : `/${path}`
-
-  // Якщо API_BASE не заданий (dev) — йдемо в same-origin /api
-  if (!API_BASE) return p
-
-  // Якщо передали вже повний URL
-  if (p.startsWith('http://') || p.startsWith('https://')) return p
-
-  return `${API_BASE}${p}`
+// lib/api.ts
+export type ApiErrorPayload = {
+  detail?: string
+  message?: string
 }
 
-async function parseError(res: Response) {
-  const text = await res.text().catch(() => '')
-  return text || `HTTP ${res.status}`
+function normalizeBaseUrl(raw?: string) {
+  if (!raw) return ''
+  if (/^https?:\/\//.test(raw)) return raw
+  return `https://${raw}`
 }
 
-export async function apiGet<T>(path: string, token?: string) {
-  const res = await fetch(makeUrl(path), {
-    method: 'GET',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: 'include',
-  })
+export function getApiBase(): string {
+  // підтримка різних назв ENV
+  const raw =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    process.env.NEXT_PUBLIC_API ||
+    ''
 
-  if (!res.ok) throw new Error(await parseError(res))
-  return (await res.json()) as T
+  const base = normalizeBaseUrl(raw)
+  return base || 'http://localhost:8000'
 }
 
-export async function apiPost<T>(path: string, body: any, token?: string) {
-  const res = await fetch(makeUrl(path), {
-    method: 'POST',
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const base = getApiBase()
+  const url = path.startsWith('http') ? path : `${base}${path}`
+
+  const res = await fetch(url, {
+    ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers || {}),
     },
-    body: JSON.stringify(body),
-    credentials: 'include',
+    cache: 'no-store',
   })
 
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) {
+    let payload: ApiErrorPayload | null = null
+    try {
+      payload = (await res.json()) as ApiErrorPayload
+    } catch {
+      // ignore
+    }
+
+    const msg =
+      payload?.detail ||
+      payload?.message ||
+      `HTTP ${res.status} ${res.statusText}`
+
+    throw new Error(msg)
+  }
+
+  if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+export async function apiGet<T>(path: string, token?: string): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+}
+
+export async function apiPost<T>(path: string, body: any, token?: string): Promise<T> {
+  return apiFetch<T>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+}
+
+/**
+ * Важливо: BossBattle.tsx очікує named export `api`.
+ * Тому залишаємо саме так.
+ */
+export const api = {
+  // MiniApp auth (initData)
+  telegramMiniappLogin: (payload: { init_data: string }) =>
+    apiPost('/api/auth/telegram', payload),
+
+  // Browser widget auth
+  telegramWidgetLogin: (payload: any) =>
+    apiPost('/api/auth/telegram-widget', payload),
+
+  // інше (приклад)
+  getMe: (token?: string) => apiGet('/api/me', token),
 }

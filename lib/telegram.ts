@@ -15,6 +15,21 @@ export function getTelegramWebApp(): TelegramWebApp | null {
 }
 
 /**
+ * На деяких збірках/при повільній ініціалізації WebView `window.Telegram` з'являється
+ * не в перший момент гідрації. Ця функція дає маленький "grace period".
+ */
+export async function waitForTelegramWebApp(timeoutMs = 800, intervalMs = 50): Promise<TelegramWebApp | null> {
+  const start = Date.now();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const tg = getTelegramWebApp();
+    if (tg) return tg;
+    if (Date.now() - start >= timeoutMs) return null;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
+/**
  * IMPORTANT:
  * Mini App визначаємо по Telegram.WebApp (не по initData).
  * initData може бути порожнім якщо WebApp відкрито неправильно/не через бота.

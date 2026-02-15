@@ -1,7 +1,10 @@
+// app/page.tsx
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { apiPost } from '@/lib/api'
+import { getTelegramWebApp, isTelegramMiniApp } from '@/lib/telegram'
+import TelegramLoginWidget from '@/components/TelegramLoginWidget'
 
 type AuthResponse = {
   access_token: string
@@ -14,20 +17,18 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  const isTelegramMiniApp = useMemo(() => {
-    if (typeof window === 'undefined') return false
-    const tg = (window as any).Telegram
-    return !!tg?.WebApp && typeof tg.WebApp.initData === 'string'
+  const inMiniApp = useMemo(() => {
+    return isTelegramMiniApp()
   }, [])
 
   useEffect(() => {
-    if (!isTelegramMiniApp) return
+    if (!inMiniApp) return
 
-    const tg = (window as any).Telegram.WebApp
+    const tg = getTelegramWebApp()
     const initData = tg?.initData
 
     if (!initData) {
-      setErr('Telegram initData порожній. Відкрий гру саме як Mini App (кнопка Open в боті).')
+      setErr('Telegram initData порожній. Відкрий гру через Mini App.')
       return
     }
 
@@ -36,7 +37,7 @@ export default function Page() {
         setErr(null)
         setLoading(true)
 
-        // Mini App -> тільки initData
+        // ТІЛЬКИ MiniApp: initData -> /api/auth/telegram
         const res = await apiPost<AuthResponse>('/api/auth/telegram', {
           init_data: initData,
         })
@@ -50,21 +51,23 @@ export default function Page() {
 
         window.location.href = '/game'
       } catch (e: any) {
-        setErr(e?.message || 'Помилка авторизації Telegram (initData)')
+        setErr(e?.message || 'Помилка авторизації Telegram (Mini App)')
       } finally {
         setLoading(false)
       }
     })()
-  }, [isTelegramMiniApp])
+  }, [inMiniApp])
 
   return (
     <main className="min-h-screen flex items-start justify-center p-4 pixel-noise">
       <div className="pixel-border w-full max-w-md p-5">
-        <h1 className="text-2xl mb-4">Прокляті Кургани</h1>
+        <h1 className="text-2xl mb-2">Прокляті Кургани</h1>
 
-        <p className="text-sm mb-4 opacity-80">Етно-українська гра міфології та долі</p>
+        <p className="text-sm mb-4 opacity-80">
+          Етно-українська гра міфології та долі
+        </p>
 
-        {isTelegramMiniApp ? (
+        {inMiniApp ? (
           <>
             <div className="text-sm mb-3 opacity-80">
               {loading ? 'Входимо через Telegram Mini App…' : 'Запуск через Telegram Mini App'}
@@ -86,20 +89,15 @@ export default function Page() {
           </>
         ) : (
           <>
-            <p className="text-sm mb-3 opacity-80">
-              У браузері вхід тільки через Telegram Login Widget або пароль.
-            </p>
+            {/* ТІЛЬКИ БРАУЗЕР: Widget */}
+            <TelegramLoginWidget />
+
+            <div className="h-3" />
 
             <button
-              className="pixel-btn pixel-btn-primary w-full"
-              onClick={() => (window.location.href = '/login-telegram')}
+              className="pixel-btn w-full"
+              onClick={() => (window.location.href = '/login')}
             >
-              Увійти через Telegram
-            </button>
-
-            <div className="h-2" />
-
-            <button className="pixel-btn w-full" onClick={() => (window.location.href = '/login')}>
               Або увійти паролем
             </button>
           </>

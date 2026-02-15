@@ -14,11 +14,15 @@ export default function Home() {
     (async () => {
       loadAccessTokenFromStorage();
 
+      // Mini App flow
       if (isMiniApp()) {
         ensureTelegramReady();
         setDbg(telegramDebugInfo());
+
         try {
           const initData = getInitData();
+
+          // Якщо initData порожній — це майже завжди означає, що відкрито НЕ як WebApp через бота
           if (!initData || initData.length < 10) {
             setErr(
               "Mini App виявлено, але Telegram initData порожній. Відкрий гру через кнопку Web App у боті (Menu) або через startapp-лінк."
@@ -28,7 +32,7 @@ export default function Home() {
 
           const res = await api.auth.telegramInitData(initData);
           setAccessToken(res.accessToken);
-          await api.me(); // auto-create daily character
+          await api.me(); // auto-create daily character if needed
           window.location.href = "/play";
           return;
         } catch (e: any) {
@@ -37,7 +41,7 @@ export default function Home() {
         }
       }
 
-      // browser
+      // Browser flow
       if (loadAccessTokenFromStorage()) {
         try {
           await api.me();
@@ -61,7 +65,7 @@ export default function Home() {
           <div className="font-black text-white mb-1">Telegram debug</div>
           <pre className="whitespace-pre-wrap break-words">{JSON.stringify(dbg, null, 2)}</pre>
           <div className="mt-2 text-[10px] opacity-80">
-            Якщо <b>initDataLen = 0</b>, це означає що сторінку відкрито НЕ як Telegram WebApp (або WebApp не прив’язаний у BotFather).
+            Якщо <b>initDataLen = 0</b>, сторінку відкрито НЕ як Telegram WebApp або WebApp не прив’язаний у BotFather.
           </div>
         </div>
       ) : null}

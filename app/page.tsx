@@ -15,24 +15,19 @@ export default function Page() {
   const [err, setErr] = useState<string | null>(null)
 
   const isTelegramMiniApp = useMemo(() => {
-    return typeof window !== 'undefined' && !!(window as any)?.Telegram?.WebApp
+    if (typeof window === 'undefined') return false
+    const tg = (window as any).Telegram
+    return !!tg?.WebApp && typeof tg.WebApp.initData === 'string'
   }, [])
 
   useEffect(() => {
     if (!isTelegramMiniApp) return
 
     const tg = (window as any).Telegram.WebApp
-
-    // щоб Mini App коректно ініціалізувався
-    try {
-      tg.ready?.()
-      tg.expand?.()
-    } catch {}
-
     const initData = tg?.initData
 
     if (!initData) {
-      setErr('Telegram initData порожній. Відкрий гру через Telegram Mini App.')
+      setErr('Telegram initData порожній. Відкрий гру саме як Mini App (кнопка Open в боті).')
       return
     }
 
@@ -41,23 +36,21 @@ export default function Page() {
         setErr(null)
         setLoading(true)
 
-        // ✅ Mini App логін ТІЛЬКИ через initData
+        // Mini App -> тільки initData
         const res = await apiPost<AuthResponse>('/api/auth/telegram', {
           init_data: initData,
         })
 
         localStorage.setItem('access_token', res.access_token)
 
-        // якщо новий — реєстрація/онбординг
         if (res.is_new) {
           window.location.href = '/onboarding'
           return
         }
 
-        // якщо існуючий — у гру
         window.location.href = '/game'
       } catch (e: any) {
-        setErr(e?.message || 'Помилка авторизації Telegram (Mini App)')
+        setErr(e?.message || 'Помилка авторизації Telegram (initData)')
       } finally {
         setLoading(false)
       }
@@ -69,9 +62,7 @@ export default function Page() {
       <div className="pixel-border w-full max-w-md p-5">
         <h1 className="text-2xl mb-4">Прокляті Кургани</h1>
 
-        <p className="text-sm mb-4 opacity-80">
-          Етно-українська гра міфології та долі
-        </p>
+        <p className="text-sm mb-4 opacity-80">Етно-українська гра міфології та долі</p>
 
         {isTelegramMiniApp ? (
           <>
@@ -96,7 +87,7 @@ export default function Page() {
         ) : (
           <>
             <p className="text-sm mb-3 opacity-80">
-              У браузері вхід працює через Telegram Login Widget або пароль.
+              У браузері вхід тільки через Telegram Login Widget або пароль.
             </p>
 
             <button
@@ -108,10 +99,7 @@ export default function Page() {
 
             <div className="h-2" />
 
-            <button
-              className="pixel-btn w-full"
-              onClick={() => (window.location.href = '/login')}
-            >
+            <button className="pixel-btn w-full" onClick={() => (window.location.href = '/login')}>
               Або увійти паролем
             </button>
           </>

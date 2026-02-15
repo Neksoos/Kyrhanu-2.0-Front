@@ -1,8 +1,15 @@
+// components/TelegramLoginWidget.tsx
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { api } from '@/lib/api'
-import { useStore } from '@/lib/store'
+import { apiPost } from '@/lib/api'
+
+type AuthResponse = {
+  access_token: string
+  token_type: 'bearer'
+  user: any
+  is_new: boolean
+}
 
 declare global {
   interface Window {
@@ -10,67 +17,80 @@ declare global {
   }
 }
 
-/**
- * Telegram Login Widget for browser auth.
- * Uses NEXT_PUBLIC_TELEGRAM_BOT_USERNAME (MUST be without "@").
- */
-export function TelegramLoginWidget() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState('')
+export default function TelegramLoginWidget() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const botUsername =
+    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ||
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ||
+    ''
 
   useEffect(() => {
-    const raw = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || ''
-    const botUsername = raw.replace(/^@/, '').trim()
-
+    if (!ref.current) return
     if (!botUsername) {
-      setError('NEXT_PUBLIC_TELEGRAM_BOT_USERNAME не задано (має бути без @)')
+      setErr('Не задано NEXT_PUBLIC_TG_BOT_USERNAME у ENV')
       return
     }
 
-    if (!containerRef.current) return
-    containerRef.current.innerHTML = ''
-
+    // колбек, який викличе Telegram widget
     window.onTelegramAuth = async (user: any) => {
       try {
-        setError('')
-        const res = await api.telegramWidgetAuth(user)
-        useStore.getState().setAuth(res.access_token, res.user)
+        setErr(null)
+        setLoading(true)
+
+        const res = await apiPost<AuthResponse>('/api/auth/telegram-widget', user)
+
+        localStorage.setItem('access_token', res.access_token)
 
         if (res.is_new) {
-          useStore.getState().addNotification({
-            id: `welcome-${Date.now()}`,
-            type: 'success',
-            title: 'Вітаємо!',
-            message: 'Акаунт створено. Можеш копати кургани 😊',
-            duration: 4000,
-          })
+          window.location.href = '/onboarding'
+          return
         }
+
+        window.location.href = '/game'
       } catch (e: any) {
-        console.error(e)
-        setError(e?.message || 'Telegram auth failed')
+        setErr(e?.message || 'Помилка Telegram Widget авторизації')
+      } finally {
+        setLoading(false)
       }
     }
 
+    // чистимо контейнер і вставляємо скрипт
+    ref.current.innerHTML = ''
+
     const script = document.createElement('script')
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
     script.async = true
-    script.setAttribute('data-telegram-login', botUsername)
+    script.src = 'https://telegram.org/js/telegram-widget.js?22'
+    script.setAttribute('data-telegram-login', botUsername) // без @
     script.setAttribute('data-size', 'large')
-    script.setAttribute('data-userpic', 'false')
+    script.setAttribute('data-userpic', 'true')
+    script.setAttribute('data-lang', 'uk')
     script.setAttribute('data-request-access', 'write')
     script.setAttribute('data-onauth', 'onTelegramAuth(user)')
-
-    containerRef.current.appendChild(script)
+    ref.current.appendChild(script)
 
     return () => {
-      delete window.onTelegramAuth
+      window.onTelegramAuth = undefined
     }
-  }, [])
+  }, [botUsername])
 
   return (
-    <div className="space-y-3">
-      <div ref={containerRef} />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+    <div>
+      {err && (
+        <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
+          {err}
+        </div>
+      )}
+
+      <div ref={ref} />
+
+      {loading && (
+        <div className="text-sm mt-3 opacity-80">
+          Входимо через Telegram…
+        </div>
+      )}
     </div>
   )
 }

@@ -1,108 +1,93 @@
-// app/page.tsx
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { apiPost } from '@/lib/api'
-import { getTelegramWebApp, isTelegramMiniApp } from '@/lib/telegram'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 import TelegramLoginWidget from '@/components/TelegramLoginWidget'
+import { api, type AuthResponse } from '@/lib/api'
+import { getTelegramWebApp, isTelegramMiniApp } from '@/lib/telegram'
 
-type AuthResponse = {
-  access_token: string
-  token_type: 'bearer'
-  user: any
-  is_new: boolean
-}
+export default function HomePage() {
+  const router = useRouter()
 
-export default function Page() {
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const inMiniApp = useMemo(() => {
-    return isTelegramMiniApp()
-  }, [])
+  const inMiniApp = useMemo(() => (typeof window !== 'undefined' ? isTelegramMiniApp() : false), [])
+
+  const finishAuth = (res: AuthResponse) => {
+    localStorage.setItem('access_token', res.access_token)
+    if (res.is_new_user) router.replace('/onboarding')
+    else router.replace('/game')
+  }
 
   useEffect(() => {
-    if (!inMiniApp) return
-
-    const tg = getTelegramWebApp()
-    const initData = tg?.initData
-
-    if (!initData) {
-      setErr('Telegram initData порожній. Відкрий гру через Mini App.')
+    // If already logged in — go to game
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+    if (token) {
+      router.replace('/game')
       return
     }
 
-    ;(async () => {
-      try {
-        setErr(null)
-        setLoading(true)
+    // Mini App: auto-login by initData
+    if (inMiniApp) {
+      const tg = getTelegramWebApp()
+      const initData = tg?.initData
+      if (!initData) {
+        setError('Не знайдено Telegram initData. Відкрий гру через Telegram Mini App.')
+        setLoading(false)
+        return
+      }
 
-        // ТІЛЬКИ MiniApp: initData -> /api/auth/telegram
-        const res = await apiPost<AuthResponse>('/api/auth/telegram', {
-          init_data: initData,
+      api
+        .telegramMiniappLogin(initData)
+        .then(finishAuth)
+        .catch((e) => {
+          setError(e?.message || 'Помилка входу через Telegram Mini App')
+          setLoading(false)
         })
 
-        localStorage.setItem('access_token', res.access_token)
+      return
+    }
 
-        if (res.is_new) {
-          window.location.href = '/onboarding'
-          return
-        }
-
-        window.location.href = '/game'
-      } catch (e: any) {
-        setErr(e?.message || 'Помилка авторизації Telegram (Mini App)')
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [inMiniApp])
+    // Browser: show Telegram widget
+    setLoading(false)
+  }, [inMiniApp, router])
 
   return (
-    <main className="min-h-screen flex items-start justify-center p-4 pixel-noise">
-      <div className="pixel-border w-full max-w-md p-5">
-        <h1 className="text-2xl mb-2">Прокляті Кургани</h1>
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
+        <h1 className="text-2xl font-bold mb-2">Прокляті Кургани</h1>
+        <p className="text-sm text-neutral-600 mb-6">Етно-українська гра міфології та долі</p>
 
-        <p className="text-sm mb-4 opacity-80">
-          Етно-українська гра міфології та долі
-        </p>
+        {loading && <p className="text-sm">Зачекай…</p>}
 
-        {inMiniApp ? (
-          <>
-            <div className="text-sm mb-3 opacity-80">
-              {loading ? 'Входимо через Telegram Mini App…' : 'Запуск через Telegram Mini App'}
-            </div>
-
-            {err && (
-              <div className="text-sm mb-3" style={{ color: '#b30c12' }}>
-                {err}
-              </div>
-            )}
-
-            <button
-              className="pixel-btn pixel-btn-primary w-full"
-              onClick={() => window.location.reload()}
-              disabled={loading}
-            >
-              Перезапустити вхід
-            </button>
-          </>
-        ) : (
-          <>
-            {/* ТІЛЬКИ БРАУЗЕР: Widget */}
-            <TelegramLoginWidget />
-
-            <div className="h-3" />
-
-            <button
-              className="pixel-btn w-full"
-              onClick={() => (window.location.href = '/login')}
-            >
-              Або увійти паролем
-            </button>
-          </>
+        {!loading && error && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
         )}
+
+        {!loading && !inMiniApp && (
+          <div className="mb-4">
+            <TelegramLoginWidget
+              onAuthed={(res) => {
+                if (res?.access_token) finishAuth(res)
+              }}
+            />
+          </div>
+        )}
+
+        <Link
+          href="/login"
+          className="block w-full rounded-xl border border-neutral-300 px-4 py-3 text-center text-sm hover:bg-neutral-50"
+        >
+          Або увійти паролем
+        </Link>
+
+        <p className="mt-4 text-xs text-neutral-500">
+          * В Telegram Mini App використовується <b>initData</b>. У браузері — тільки <b>Telegram Login Widget</b>.
+        </p>
       </div>
-    </main>
+    </div>
   )
 }

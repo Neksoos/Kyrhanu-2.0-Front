@@ -15,8 +15,9 @@ export function getTelegramWebApp(): TelegramWebApp | null {
 }
 
 /**
- * Detect Mini App by Telegram.WebApp existence (NOT by initData truthiness).
- * initData can be empty in misconfigured launches, but we still want Telegram-specific UX.
+ * IMPORTANT:
+ * Mini App визначаємо по Telegram.WebApp (не по initData).
+ * initData може бути порожнім якщо WebApp відкрито неправильно/не через бота.
  */
 export function isMiniApp(): boolean {
   return Boolean(getTelegramWebApp());
@@ -40,7 +41,7 @@ export function getInitData(): string {
 }
 
 export function telegramDebugInfo() {
-  const tg = getTelegramWebApp() as any;
+  const tg: any = getTelegramWebApp();
   if (!tg) return null;
   return {
     hasWebApp: true,

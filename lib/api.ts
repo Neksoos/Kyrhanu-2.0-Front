@@ -1,29 +1,31 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE!;
+"use client";
 
-export type AuthState = {
-  accessToken: string | null;
-};
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
-export const authState: AuthState = {
-  accessToken: null
-};
+type AuthState = { accessToken: string | null };
+const authState: AuthState = { accessToken: null };
 
-export function setAccessToken(t: string | null) {
-  authState.accessToken = t;
+function setAccessToken(token: string | null) {
+  authState.accessToken = token;
   if (typeof window !== "undefined") {
-    if (t) localStorage.setItem("pk_access", t);
+    if (token) localStorage.setItem("pk_access", token);
     else localStorage.removeItem("pk_access");
   }
 }
 
-export function loadAccessTokenFromStorage() {
-  if (typeof window === "undefined") return null;
+function loadAccessTokenFromStorage() {
+  if (typeof window === "undefined") return;
   const t = localStorage.getItem("pk_access");
   authState.accessToken = t;
-  return t;
 }
 
 async function apiFetch(path: string, init: RequestInit = {}) {
+  // Ensure token is available after page reload / redirect.
+  // (In some WebViews refresh cookies can be blocked, so we rely on pk_access.)
+  if (!authState.accessToken) {
+    loadAccessTokenFromStorage();
+  }
+
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
 
@@ -32,69 +34,92 @@ async function apiFetch(path: string, init: RequestInit = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers,
-    credentials: "include"
+    credentials: "include",
   });
 
+  // If unauthorized, try refresh once
   if (res.status === 401) {
-    // try refresh once
-    const rr = await fetch(`${API_BASE}/auth/refresh`, { method: "POST", credentials: "include" });
-    if (rr.ok) {
-      const j = await rr.json();
+    const r = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (r.ok) {
+      const j = await r.json();
       setAccessToken(j.accessToken);
-      // retry
+      // retry original request
       const res2 = await fetch(`${API_BASE}${path}`, {
         ...init,
-        headers: new Headers({ ...Object.fromEntries(headers.entries()), Authorization: `Bearer ${j.accessToken}` }),
-        credentials: "include"
+        headers: new Headers({
+          ...Object.fromEntries(headers.entries()),
+          Authorization: `Bearer ${j.accessToken}`,
+        }),
+        credentials: "include",
       });
-      if (!res2.ok) throw new Error((await safeJson(res2))?.error ?? `HTTP ${res2.status}`);
-      return safeJson(res2);
+      return res2;
     }
   }
 
-  if (!res.ok) throw new Error((await safeJson(res))?.error ?? `HTTP ${res.status}`);
-  return safeJson(res);
-}
-
-async function safeJson(res: Response) {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return res;
 }
 
 export const api = {
   auth: {
-    register: (email: string, password: string) =>
-      apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),
-    login: (email: string, password: string) =>
-      apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
-    telegramInitData: (initData: string) =>
-      apiFetch("/auth/telegram/initdata", { method: "POST", body: JSON.stringify({ initData }) }),
-    telegramWidget: (payload: any) =>
-      apiFetch("/auth/telegram/widget", { method: "POST", body: JSON.stringify(payload) }),
-    logout: () => apiFetch("/auth/logout", { method: "POST" })
+    telegramInitData: async (initData: string) => {
+      const res = await apiFetch("/auth/telegram/initdata", {
+        method: "POST",
+        body: JSON.stringify({ initData }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const j = await res.json();
+      setAccessToken(j.accessToken);
+      return j;
+    },
+
+    login: async (email: string, password: string) => {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const j = await res.json();
+      setAccessToken(j.accessToken);
+      return j;
+    },
+
+    register: async (email: string, password: string, displayName?: string) => {
+      const res = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, displayName }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const j = await res.json();
+      setAccessToken(j.accessToken);
+      return j;
+    },
+
+    logout: async () => {
+      await apiFetch("/auth/logout", { method: "POST" });
+      setAccessToken(null);
+    },
   },
-  me: () => apiFetch("/me"),
-  generateCharacter: (force?: boolean) => apiFetch("/characters/generate", { method: "POST", body: JSON.stringify({ force: !!force }) }),
-  inventory: () => apiFetch("/inventory"),
-  equipment: () => apiFetch("/equipment"),
-  equip: (slot: string, item_instance_id: string | null) =>
-    apiFetch("/equipment", { method: "POST", body: JSON.stringify({ slot, item_instance_id }) }),
-  runStart: () => apiFetch("/runs/start", { method: "POST" }),
-  runAct: (run_id: string, action: "ATTACK" | "DEFEND" | "FLEE") =>
-    apiFetch("/runs/act", { method: "POST", body: JSON.stringify({ run_id, action }) }),
-  bossesActive: () => apiFetch("/bosses/active"),
-  bossesAttack: (live_boss_id: string) => apiFetch("/bosses/attack", { method: "POST", body: JSON.stringify({ live_boss_id }) }),
-  guilds: () => apiFetch("/guilds"),
-  guildCreate: (name: string, tag: string) => apiFetch("/guilds/create", { method: "POST", body: JSON.stringify({ name, tag }) }),
-  guildJoin: (join_code: string) => apiFetch("/guilds/join", { method: "POST", body: JSON.stringify({ join_code }) }),
-  guildLeave: () => apiFetch("/guilds/leave", { method: "POST" }),
-  seasonActive: () => apiFetch("/seasons/active"),
-  questsToday: () => apiFetch("/quests/today"),
-  rewardClaim: (user_quest_id: string) => apiFetch("/rewards/claim", { method: "POST", body: JSON.stringify({ user_quest_id }) }),
-  shopOffers: () => apiFetch("/shop/offers"),
-  shopPurchase: (offer_id: string, provider: "telegram_stars" | "test") =>
-    apiFetch("/shop/purchase", { method: "POST", body: JSON.stringify({ offer_id, provider }) })
+
+  me: async () => {
+    const res = await apiFetch("/me");
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  game: {
+    status: async () => {
+      const res = await apiFetch("/game/status");
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+  },
+
+  _debug: {
+    setAccessToken,
+    loadAccessTokenFromStorage,
+    authState,
+  },
 };

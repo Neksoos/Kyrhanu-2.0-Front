@@ -1,0 +1,108 @@
+{
+  "common": {
+    "app_name": "Przeklęte Kurhany",
+    "loading": "Ładowanie…",
+    "soon": "Wkrótce",
+    "soon_body": "Ta funkcja nie jest jeszcze włączona na serwerze. Wrócimy do tego wkrótce.",
+    "continue": "Dalej",
+    "back": "Wstecz",
+    "close": "Zamknij",
+    "ok": "OK",
+    "cancel": "Anuluj",
+    "nav_home": "Dom",
+    "nav_daily": "Odrodzenie",
+    "nav_achievements": "Pieczęcie",
+    "nav_run": "Bieg",
+    "nav_inventory": "Ekwipunek",
+    "nav_shop": "Sklep",
+    "nav_tutorial": "Samouczek",
+    "nav_settings": "Ustawienia",
+    "not_found_title": "Zagubiony w kurhanach",
+    "not_found_body": "Nie znaleziono strony. Wróć na główną ścieżkę."
+  },
+  "auth": {
+    "title": "Wejście do Kurhanów",
+    "login_tab": "Logowanie",
+    "register_tab": "Rejestracja",
+    "email": "Email",
+    "password": "Hasło",
+    "email_placeholder": "name@example.com",
+    "password_placeholder": "••••••••",
+    "cta_login": "Zaloguj",
+    "cta_register": "Utwórz konto",
+    "login_success": "Zalogowano",
+    "register_success": "Konto utworzone",
+    "logout": "Wylogowano"
+  },
+  "home": {
+    "title": "Obóz",
+    "subtitle": "Dzisiejszy los",
+    "cta_daily": "Codzienne odrodzenie",
+    "cta_achievements": "Pieczęcie chwały",
+    "cta_settings": "Ustawienia",
+    "no_me_backend": "Profil (/me) nie jest jeszcze dostępny na serwerze. Tryb minimalny.",
+    "today_title": "Dzisiaj",
+    "today_day_key": "Dzień: {{dayKey}}"
+  },
+  "daily": {
+    "title": "Codzienne Odrodzenie",
+    "choose_variant": "Wybierz jedną z trzech ścieżek losu:",
+    "variant_A": "Wariant A",
+    "variant_B": "Wariant B",
+    "variant_C": "Wariant C",
+    "cta_claim": "Przyjmij los",
+    "claimed_toast": "Los przyjęty",
+    "note_backend_determined": "Wynik ustala serwer. Klient nie fałszuje nagród/bohatera."
+  },
+  "achievements": {
+    "title": "Pieczęcie Chwały",
+    "claim_id": "ID osiągnięcia",
+    "claim_id_placeholder": "np. ach_first_blood",
+    "cta_claim": "Odbierz nagrodę",
+    "claimed_toast": "Nagroda odebrana ({{id}})",
+    "share_title": "Karta udostępniania",
+    "cta_share": "Pobierz kartę",
+    "share_ready": "Karta gotowa"
+  },
+  "run": {
+    "title": "Bieg"
+  },
+  "inventory": {
+    "title": "Ekwipunek"
+  },
+  "shop": {
+    "title": "Sklep"
+  },
+  "tutorial": {
+    "title": "Samouczek"
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "language": "Język",
+    "patron": "Wesprzyj (Patron)",
+    "logout": "Wyloguj",
+    "health": "Stan serwera",
+    "health_ok": "W porządku",
+    "health_ok_db_fail": "API działa, DB niedostępna",
+    "health_fail": "Brak odpowiedzi",
+    "token": "Token",
+    "token_present": "jest",
+    "token_missing": "brak"
+  },
+  "patron": {
+    "title": "Wesprzyj Kurhany",
+    "body": "Tę grę tworzy mały zespół. Jeśli podoba Ci się klimat — wesprzyj rozwój.",
+    "where_goes": "Na co idzie wsparcie: serwery, grafika, dźwięk i czas zespołu.",
+    "cta_support": "Wesprzyj",
+    "cta_not_now": "Nie teraz",
+    "cta_open_jar": "Otwórz skarbonkę",
+    "thanks": "Dzięki za wsparcie!"
+  },
+  "errors": {
+    "backend_generic": "Błąd: {{message}}",
+    "unauthorized": "Wymagana autoryzacja",
+    "forbidden": "Brak dostępu",
+    "not_found": "Nie znaleziono",
+    "too_many_requests": "Za dużo prób. Spróbuj później."
+  }
+}

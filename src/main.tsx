@@ -9,17 +9,23 @@ import { applyThemeToCssVars, tgReady } from '@/lib/telegram'
 
 const queryClient = new QueryClient()
 
-function initTelegram() {
+async function initTelegram() {
   try {
-    tgReady()
+    await tgReady()
     applyThemeToCssVars()
   } catch {}
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTelegram)
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      void initTelegram()
+    },
+    { once: true },
+  )
 } else {
-  initTelegram()
+  void initTelegram()
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

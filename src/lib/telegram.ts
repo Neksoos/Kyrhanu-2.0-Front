@@ -1,4 +1,4 @@
-type TgWebApp = {
+export type TgWebApp = {
   ready: () => void
   expand: () => void
   initData?: string
@@ -13,31 +13,22 @@ type TgWebApp = {
 }
 
 declare global {
-  interface Window { Telegram?: { WebApp?: TgWebApp } }
-}
-
-export function getWebApp(): TgWebApp | undefined { return window.Telegram?.WebApp }
-
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
-/**
- * In some WebViews Telegram injects the WebApp object a bit пізніше.
- * This helper waits a little before giving up.
- */
-export async function waitForWebApp(timeoutMs = 1500): Promise<TgWebApp | undefined> {
-  const started = Date.now()
-  while (Date.now() - started < timeoutMs) {
-    const tg = getWebApp()
-    if (tg) return tg
-    await sleep(50)
+  interface Window {
+    Telegram?: { WebApp?: TgWebApp }
   }
-  return getWebApp()
+}
+
+export function getWebApp(): TgWebApp | undefined {
+  return window.Telegram?.WebApp
 }
 
 /**
- * Prefer real Telegram initData. For local debug you can pass ?initData=... in URL.
+ * Get Telegram initData.
+ * Sources:
+ * 1) window.Telegram.WebApp.initData (normal)
+ * 2) URL query: ?tgWebAppData=...
+ * 3) URL hash:  #tgWebAppData=...
+ * 4) Local debug: ?initData=...
  */
 export function getInitData(): string {
   const tg = getWebApp()
@@ -46,14 +37,22 @@ export function getInitData(): string {
 
   try {
     const sp = new URLSearchParams(window.location.search)
-    return sp.get('initData') ?? sp.get('tgWebAppData') ?? ''
+    const q = sp.get('initData') ?? sp.get('tgWebAppData')
+    if (q) return decodeURIComponent(q)
+
+    const hash = (window.location.hash ?? '').replace(/^#/, '')
+    const hs = new URLSearchParams(hash)
+    const h = hs.get('tgWebAppData')
+    if (h) return decodeURIComponent(h)
+
+    return ''
   } catch {
     return ''
   }
 }
 
-export async function tgReady() {
-  const tg = (await waitForWebApp())
+export function tgReady() {
+  const tg = getWebApp()
   if (!tg) return
   try {
     tg.ready()
@@ -64,18 +63,25 @@ export async function tgReady() {
 export function haptic(kind: 'light' | 'medium' = 'light') {
   const tg = getWebApp()
   if (!tg?.HapticFeedback) return
-  try { tg.HapticFeedback.impactOccurred(kind) } catch {}
+  try {
+    tg.HapticFeedback.impactOccurred(kind)
+  } catch {}
 }
 
 export function openExternalLink(url: string) {
   const tg = getWebApp()
   if (tg?.openLink) {
-    try { tg.openLink(url); return } catch {}
+    try {
+      tg.openLink(url)
+      return
+    } catch {}
   }
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)) }
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n))
+}
 function hexToRgbTriplet(hex?: string): [number, number, number] | null {
   if (!hex) return null
   const h = hex.replace('#', '').trim()
@@ -86,7 +92,9 @@ function hexToRgbTriplet(hex?: string): [number, number, number] | null {
   if ([r, g, b].some((x) => Number.isNaN(x))) return null
   return [r, g, b]
 }
-function mix(a: number, b: number, t: number) { return Math.round(a + (b - a) * t) }
+function mix(a: number, b: number, t: number) {
+  return Math.round(a + (b - a) * t)
+}
 function lighten([r, g, b]: [number, number, number], t: number): [number, number, number] {
   return [mix(r, 255, t), mix(g, 255, t), mix(b, 255, t)]
 }
@@ -111,7 +119,7 @@ export function applyThemeToCssVars() {
   const basePanel: [number, number, number] = [28, 22, 18]
 
   const bg = tgBg ? darken(lighten(tgBg, 0.05), 0.55) : baseBg
-  const brighten = scheme === 'light' ? 0.10 : 0
+  const brighten = scheme === 'light' ? 0.1 : 0
   const panel = lighten(basePanel, brighten)
   const panel2 = lighten([23, 18, 15], brighten)
 
@@ -124,7 +132,6 @@ export function applyThemeToCssVars() {
     root.style.setProperty('--spd-text', toTripletStr(text))
   }
 
-  // keep shadcn mappings in sync
   root.style.setProperty('--background', getComputedStyle(root).getPropertyValue('--spd-bg').trim())
   root.style.setProperty('--foreground', getComputedStyle(root).getPropertyValue('--spd-text').trim())
   root.style.setProperty('--card', getComputedStyle(root).getPropertyValue('--spd-panel').trim())

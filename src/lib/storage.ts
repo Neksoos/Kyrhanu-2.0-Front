@@ -1,24 +1,22 @@
-const ACCESS_KEY = 'access_token'
-const TG_WIDGET_KEY = 'tg_widget_payload'
+const ACCESS_TOKEN_KEY = "access_token";
+let inMemoryAccessToken: string | null = null;
 
-export const storage = {
-  getAccessToken(): string {
-    return localStorage.getItem(ACCESS_KEY) ?? ''
-  },
-  setAccessToken(token: string) {
-    localStorage.setItem(ACCESS_KEY, token)
-  },
-  clearAll() {
-    localStorage.removeItem(ACCESS_KEY)
-  },
-  getWidgetPayload(): unknown | null {
-    const raw = localStorage.getItem(TG_WIDGET_KEY)
-    if (!raw) return null
-    try {
-      const parsed = JSON.parse(raw)
-      return parsed && typeof parsed === 'object' ? parsed : null
-    } catch {
-      return null
-    }
-  },
+export function getAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
+export function setAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+export function clearAccessToken(): void {
+  setAccessToken(null);
+}
+
+export function lsGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+export function lsSet(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch {}
+}
+export function lsRemove(key: string): void {
+  try { localStorage.removeItem(key); } catch {}
 }

@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom/client'
 import './styles.css'
 import './styles/globals.css'
 
-import '@/i18n' // важливо: ініціалізує переклади
+import '@/i18n'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { App } from './App'
+import App from './App'
 
 const qc = new QueryClient({
   defaultOptions: {

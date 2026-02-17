@@ -1,0 +1,108 @@
+{
+  "common": {
+    "app_name": "Cursed Kurgans",
+    "loading": "Loading…",
+    "soon": "Coming soon",
+    "soon_body": "This feature is not enabled on the server yet. We’ll be back to it soon.",
+    "continue": "Continue",
+    "back": "Back",
+    "close": "Close",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "nav_home": "Home",
+    "nav_daily": "Rebirth",
+    "nav_achievements": "Seals",
+    "nav_run": "Run",
+    "nav_inventory": "Inventory",
+    "nav_shop": "Shop",
+    "nav_tutorial": "Tutorial",
+    "nav_settings": "Settings",
+    "not_found_title": "Lost in the kurgans",
+    "not_found_body": "Page not found. Return to the main path."
+  },
+  "auth": {
+    "title": "Enter the Kurgans",
+    "login_tab": "Login",
+    "register_tab": "Register",
+    "email": "Email",
+    "password": "Password",
+    "email_placeholder": "name@example.com",
+    "password_placeholder": "••••••••",
+    "cta_login": "Login",
+    "cta_register": "Create account",
+    "login_success": "Login successful",
+    "register_success": "Account created",
+    "logout": "Logged out"
+  },
+  "home": {
+    "title": "Camp",
+    "subtitle": "Today’s fate",
+    "cta_daily": "Daily rebirth",
+    "cta_achievements": "Glory seals",
+    "cta_settings": "Settings",
+    "no_me_backend": "Profile (/me) is not available on the server yet. Showing minimal mode.",
+    "today_title": "Today",
+    "today_day_key": "Day: {{dayKey}}"
+  },
+  "daily": {
+    "title": "Daily Rebirth",
+    "choose_variant": "Choose one of three fate paths:",
+    "variant_A": "Variant A",
+    "variant_B": "Variant B",
+    "variant_C": "Variant C",
+    "cta_claim": "Accept fate",
+    "claimed_toast": "Fate accepted",
+    "note_backend_determined": "Result is determined by the server. Client does not fake rewards/hero."
+  },
+  "achievements": {
+    "title": "Glory Seals",
+    "claim_id": "Achievement ID",
+    "claim_id_placeholder": "e.g. ach_first_blood",
+    "cta_claim": "Claim reward",
+    "claimed_toast": "Reward claimed ({{id}})",
+    "share_title": "Share card",
+    "cta_share": "Get share card",
+    "share_ready": "Share card is ready"
+  },
+  "run": {
+    "title": "Run"
+  },
+  "inventory": {
+    "title": "Inventory"
+  },
+  "shop": {
+    "title": "Shop"
+  },
+  "tutorial": {
+    "title": "Tutorial"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "patron": "Support (Patron)",
+    "logout": "Logout",
+    "health": "Server status",
+    "health_ok": "All good",
+    "health_ok_db_fail": "API ok, DB unavailable",
+    "health_fail": "No response",
+    "token": "Token",
+    "token_present": "present",
+    "token_missing": "missing"
+  },
+  "patron": {
+    "title": "Support the Kurgans",
+    "body": "This game is made by a small team. If you like the vibe — support the development.",
+    "where_goes": "Where it goes: servers, art, sound, and the team’s time.",
+    "cta_support": "Support",
+    "cta_not_now": "Not now",
+    "cta_open_jar": "Open jar",
+    "thanks": "Thanks for your support!"
+  },
+  "errors": {
+    "backend_generic": "Error: {{message}}",
+    "unauthorized": "Authorization required",
+    "forbidden": "Access forbidden",
+    "not_found": "Not found",
+    "too_many_requests": "Too many attempts. Try again later."
+  }
+}

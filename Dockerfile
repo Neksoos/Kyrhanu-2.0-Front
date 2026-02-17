@@ -2,11 +2,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json ./
-# якщо lock є — скопіюємо; якщо нема — цей крок не впаде
-COPY package-lock.json* ./
 
-# npm ci тільки при наявності lock, інакше — npm install
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN npm install --no-audit --no-fund
 
 COPY . .
 

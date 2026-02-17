@@ -16,6 +16,7 @@
     "generate:openapi": "openapi-typescript \"$VITE_API_BASE_URL/openapi.json\" -o src/api/generated.d.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
     "@radix-ui/react-label": "^2.1.0",
@@ -34,6 +35,7 @@
     "react-hook-form": "^7.53.0",
     "react-i18next": "^15.1.0",
     "react-router-dom": "^6.26.2",
+    "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "zod": "^3.23.8"
   },

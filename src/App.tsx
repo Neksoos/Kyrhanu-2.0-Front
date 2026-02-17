@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
@@ -26,7 +26,7 @@ function TopBar() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Toaster richColors position="top-center" />
       <TopBar />
 
@@ -49,6 +49,6 @@ export default function App() {
           </Routes>
         </div>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   )
 }

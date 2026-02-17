@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
@@ -25,7 +24,7 @@ function TopBar() {
   )
 }
 
-export function App() {
+export default function App() {
   return (
     <HashRouter>
       <Toaster richColors position="top-center" />
@@ -34,10 +33,8 @@ export function App() {
       <div className="safe px-4 pb-24 pt-3 spd-bg min-h-dvh">
         <div className="mx-auto w-full max-w-md">
           <Routes>
-            {/* стартова сторінка */}
             <Route path="/" element={<Navigate to="/auth" replace />} />
 
-            {/* основні */}
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/daily" element={<DailyPage />} />
             <Route path="/achievements" element={<AchievementsPage />} />
@@ -48,7 +45,6 @@ export function App() {
             <Route path="/patron" element={<PatronPage />} />
             <Route path="/settings" element={<SettingsPage />} />
 
-            {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </div>

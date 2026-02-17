@@ -4,26 +4,28 @@ import { toast } from 'sonner'
 
 import { endpoints } from '@/api/endpoints'
 import { storage } from '@/lib/storage'
-import { getInitData, tgReady } from '@/lib/telegram'
+import { getInitData, tgReady, waitForWebApp } from '@/lib/telegram'
 
 export function AuthPage() {
   const nav = useNavigate()
   const [status, setStatus] = React.useState<'idle' | 'loading' | 'error' | 'ok'>('idle')
 
   React.useEffect(() => {
-    tgReady()
-
-    const initData = getInitData()
-
-    if (!initData) {
-      setStatus('error')
-      toast.error('Нема Telegram initData. Відкрий міні-ап через Telegram (Menu Button).')
-      return
-    }
-
-    setStatus('loading')
-
     ;(async () => {
+      // In some WebViews Telegram injects WebApp object with a delay.
+      await waitForWebApp(2000)
+      await tgReady()
+
+      const initData = getInitData()
+
+      if (!initData) {
+        setStatus('error')
+        toast.error('Нема Telegram initData. Відкрий міні-ап через Telegram (Menu Button).')
+        return
+      }
+
+      setStatus('loading')
+
       try {
         const res = await endpoints.auth.telegramInitData({ initData })
         storage.setAccessToken(res.accessToken)

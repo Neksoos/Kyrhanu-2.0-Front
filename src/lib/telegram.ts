@@ -17,12 +17,48 @@ declare global {
 }
 
 export function getWebApp(): TgWebApp | undefined { return window.Telegram?.WebApp }
-export function getInitData(): string { return getWebApp()?.initData ?? '' }
 
-export function tgReady() {
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * In some WebViews Telegram injects the WebApp object a bit пізніше.
+ * This helper waits a little before giving up.
+ */
+export async function waitForWebApp(timeoutMs = 1500): Promise<TgWebApp | undefined> {
+  const started = Date.now()
+  while (Date.now() - started < timeoutMs) {
+    const tg = getWebApp()
+    if (tg) return tg
+    await sleep(50)
+  }
+  return getWebApp()
+}
+
+/**
+ * Prefer real Telegram initData. For local debug you can pass ?initData=... in URL.
+ */
+export function getInitData(): string {
   const tg = getWebApp()
+  const real = tg?.initData
+  if (real && typeof real === 'string') return real
+
+  try {
+    const sp = new URLSearchParams(window.location.search)
+    return sp.get('initData') ?? sp.get('tgWebAppData') ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export async function tgReady() {
+  const tg = (await waitForWebApp())
   if (!tg) return
-  try { tg.ready(); tg.expand() } catch {}
+  try {
+    tg.ready()
+    tg.expand()
+  } catch {}
 }
 
 export function haptic(kind: 'light' | 'medium' = 'light') {

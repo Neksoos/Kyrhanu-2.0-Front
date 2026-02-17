@@ -23,10 +23,10 @@ function normalizeApiBase(raw: string): string {
   let s = (raw ?? '').trim()
   if (!s) return ''
 
-  // If user provided only hostname, assume https.
+  // If only hostname given, assume https.
   if (!/^https?:\/\//i.test(s)) s = `https://${s}`
 
-  // Remove trailing slashes.
+  // Remove trailing slashes
   return s.replace(/\/+$/, '')
 }
 
@@ -34,7 +34,6 @@ export const API_BASE_URL = normalizeApiBase(pickEnv('VITE_API_BASE_URL'))
 export const API_DEBUG = pickEnv('VITE_API_DEBUG') === 'true'
 export const TG_BOT_USERNAME = pickEnv('VITE_TG_BOT_USERNAME')
 
-// Keep the shape used across the codebase.
 export const env = {
   apiBaseUrl: API_BASE_URL,
   apiDebug: API_DEBUG,

@@ -1,32 +1,36 @@
+// src/api/endpoints.ts
 import { api } from './client'
 import type {
-  AuthResponse,
-  DailyClaimResponse,
+  AuthOut,
+  DailyClaimOut,
   DailyVariant,
-  AchievementClaimResponse,
-  AchievementShareCardResponse,
-  HealthzResponse,
+  AchievementsClaimOut,
+  AchievementsShareCardOut,
+  HealthzOut,
+  TelegramInitDataIn,
+  TelegramWidgetIn,
+  AuthLoginIn,
+  AuthRegisterIn,
 } from './types'
 
 export const endpoints = {
-  healthz: () => api.get<HealthzResponse>('/healthz'),
+  healthz: () => api.get<HealthzOut>('/healthz'),
 
   auth: {
-    register: (body: { email: string; password: string }) => api.post<AuthResponse>('/auth/register', body),
-    login: (body: { email: string; password: string }) => api.post<AuthResponse>('/auth/login', body),
+    register: (body: AuthRegisterIn) => api.post<AuthOut>('/auth/register', body),
+    login: (body: AuthLoginIn) => api.post<AuthOut>('/auth/login', body),
     logout: () => api.post<{ ok: true }>('/auth/logout', {}),
     refresh: () => api.post<{ ok: boolean; accessToken: string }>('/auth/refresh', {}),
-    telegramInitData: (body: { initData: string }) => api.post<AuthResponse>('/auth/telegram/initdata', body),
-    telegramWidget: (body: { payload: Record<string, any> }) => api.post<AuthResponse>('/auth/telegram/widget', body),
+    telegramInitData: (body: TelegramInitDataIn) => api.post<AuthOut>('/auth/telegram/initdata', body),
+    telegramWidget: (body: TelegramWidgetIn) => api.post<AuthOut>('/auth/telegram/widget', body),
   },
 
   daily: {
-    claim: (body: { variant: DailyVariant }) => api.post<DailyClaimResponse>('/daily/claim', body),
+    claim: (body: { variant: DailyVariant }) => api.post<DailyClaimOut>('/daily/claim', body),
   },
 
   achievements: {
-    claim: (body: { achievement_id: string }) =>
-      api.post<AchievementClaimResponse>('/achievements/claim', body),
-    shareCard: () => api.get<AchievementShareCardResponse>('/achievements/share-card'),
+    claim: (body: { achievement_id: string }) => api.post<AchievementsClaimOut>('/achievements/claim', body),
+    shareCard: () => api.get<AchievementsShareCardOut>('/achievements/share-card'),
   },
 }

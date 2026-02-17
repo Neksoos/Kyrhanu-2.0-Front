@@ -10,6 +10,9 @@ export function setAccessToken(token: string | null): void {
 }
 export function clearAccessToken(): void {
   setAccessToken(null)
+  try {
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+  } catch {}
 }
 
 export function lsGet(key: string): string | null {
@@ -31,6 +34,21 @@ export function lsRemove(key: string): void {
 }
 
 /**
+ * Clear everything this app stored.
+ * (Used by SettingsPage + client auth error handler)
+ */
+export function clearAll(): void {
+  clearAccessToken()
+
+  // якщо пізніше додаси інші ключі — додай їх сюди
+  const keys = [ACCESS_TOKEN_KEY]
+
+  try {
+    for (const k of keys) localStorage.removeItem(k)
+  } catch {}
+}
+
+/**
  * Backward/compat layer for imports like:
  *   import { storage } from '@/lib/storage'
  */
@@ -39,6 +57,7 @@ export const storage = {
   getAccessToken,
   setAccessToken,
   clearAccessToken,
+  clearAll,
   lsGet,
   lsSet,
   lsRemove,

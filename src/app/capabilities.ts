@@ -1,5 +1,7 @@
+// src/app/capabilities.ts
 import { api } from '@/api/client'
 import { env } from '@/lib/env'
+import type { HealthzOut } from '@/api/types'
 
 export type Capabilities = {
   hasOpenApi: boolean
@@ -53,7 +55,7 @@ export async function buildCapabilities(): Promise<Capabilities> {
 
   // healthz (hard probe)
   try {
-    const h = await api.get('/healthz')
+    const h = await api.get<HealthzOut>('/healthz')
     base.hasHealthz = !!h?.ok
   } catch {
     base.hasHealthz = false
@@ -68,9 +70,8 @@ export async function buildCapabilities(): Promise<Capabilities> {
       openapi = await res.json()
       hasOpenApi = true
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
+
   base.hasOpenApi = hasOpenApi
 
   const checks: Array<[keyof Capabilities, string, string[]]> = [
@@ -86,11 +87,8 @@ export async function buildCapabilities(): Promise<Capabilities> {
   ]
 
   for (const [key, path, methods] of checks) {
-    if (hasOpenApi) {
-      base[key] = pathExists(openapi, path, methods)
-    } else {
-      base[key] = await probePath(path)
-    }
+    if (hasOpenApi) base[key] = pathExists(openapi, path, methods)
+    else base[key] = await probePath(path)
   }
 
   return base

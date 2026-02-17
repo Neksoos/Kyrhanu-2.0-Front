@@ -1,20 +1,26 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "./styles.css";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import './styles.css'
+import './styles/globals.css'
 
-function App() {
-  return (
-    <div className="min-h-screen p-4 text-[--textMain]">
-      <div className="max-w-md mx-auto spd-panel spd-frame p-4">
-        <h1 className="text-2xl font-bold mb-2 text-outline-2">Прокляті Кургани</h1>
-        <p className="text-sm opacity-80">Vite + React успішно запущено.</p>
-      </div>
-    </div>
-  );
-}
+import '@/i18n' // важливо: ініціалізує переклади
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { App } from './App'
+
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+    <QueryClientProvider client={qc}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>,
+)

@@ -1,7 +1,8 @@
-export const JAR_URL = 'https://send.monobank.ua/jar/2uKXz7bzqk'
+const KEY = 'kyrhanu_patron_seen'
 
-export function utcDayKey(): string {
-  const d = new Date()
+export const JAR_URL = 'https://send.monobank.ua/jar/6mY3vVdQbE' // можеш змінити на свій
+
+export function utcDayKey(d = new Date()): string {
   const y = d.getUTCFullYear()
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')
   const day = String(d.getUTCDate()).padStart(2, '0')
@@ -10,6 +11,11 @@ export function utcDayKey(): string {
 
 export function markPatronSeen(dayKey: string) {
   try {
-    localStorage.setItem(`patron_seen_${dayKey}`, '1')
-  } catch {}
+    const raw = localStorage.getItem(KEY)
+    const obj = raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
+    obj[dayKey] = true
+    localStorage.setItem(KEY, JSON.stringify(obj))
+  } catch {
+    // ignore
+  }
 }

@@ -11,6 +11,8 @@ import { endpoints } from '@/api/endpoints'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { storage } from '@/lib/storage'
+import { getInitData } from '@/lib/telegram'
 
 const schema = z.object({
   email: z.string().email(),
@@ -18,34 +20,87 @@ const schema = z.object({
 })
 
 type FormValues = z.infer<typeof schema>
-
 type Tab = 'login' | 'register'
 
 export function AuthPage() {
   const { t } = useTranslation()
   const nav = useNavigate()
-
   const [tab, setTab] = React.useState<Tab>('login')
+
+  const initData = getInitData()
+  const isTelegram = Boolean(initData)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   })
 
-  const auth = useMutation({
-    mutationFn: async (body: FormValues) => {
-      if (tab === 'login') return endpoints.auth.login(body)
-      return endpoints.auth.register(body)
+  // ✅ Telegram login
+  const tgAuth = useMutation({
+    mutationFn: async () => {
+      if (!initData) throw new Error('No initData')
+      return endpoints.auth.telegramInitData({ initData })
     },
-    onSuccess: () => {
-      toast.success(tab === 'login' ? t('auth.login_success') : t('auth.register_success'))
-      nav('/home', { replace: true })
+    onSuccess: (data) => {
+      storage.setAccessToken(data.accessToken)
+      toast.success('Telegram OK')
+      nav('/daily', { replace: true })
     },
     onError: (e: any) => {
       toast.error(t('errors.backend_generic', { message: e?.detail ?? e?.message ?? 'Error' }))
     },
   })
 
+  // ✅ Auto-run in Telegram
+  React.useEffect(() => {
+    if (isTelegram && !tgAuth.isPending && !tgAuth.isSuccess) {
+      tgAuth.mutate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTelegram])
+
+  // ✅ Email/password fallback (only for non-telegram)
+  const auth = useMutation({
+    mutationFn: async (body: FormValues) => {
+      if (tab === 'login') return endpoints.auth.login(body)
+      return endpoints.auth.register(body)
+    },
+    onSuccess: (data) => {
+      storage.setAccessToken(data.accessToken)
+      toast.success(tab === 'login' ? t('auth.login_success') : t('auth.register_success'))
+      nav('/daily', { replace: true })
+    },
+    onError: (e: any) => {
+      toast.error(t('errors.backend_generic', { message: e?.detail ?? e?.message ?? 'Error' }))
+    },
+  })
+
+  // Якщо телеграм — показуємо “йде вхід”
+  if (isTelegram) {
+    return (
+      <div className="safe px-4 pb-20 pt-4 spd-bg min-h-dvh">
+        <div className="mx-auto w-full max-w-md space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="spd-label text-outline-2">Вхід через Telegram</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm opacity-80">
+                {tgAuth.isPending ? 'Авторизація…' : tgAuth.isError ? 'Помилка авторизації' : 'Готово'}
+              </div>
+              {tgAuth.isError && (
+                <Button className="w-full" variant="spd" spdTone="primary" onClick={() => tgAuth.mutate()}>
+                  Спробувати знову
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Веб-версія (не Telegram): email/password
   return (
     <div className="safe px-4 pb-20 pt-4 spd-bg min-h-dvh">
       <div className="mx-auto w-full max-w-md space-y-4">

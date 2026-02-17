@@ -7,25 +7,22 @@ import './styles/globals.css'
 
 import { applyThemeToCssVars, tgReady } from '@/lib/telegram'
 
+// ✅ щоб не створювався заново при HMR/StrictMode
 const queryClient = new QueryClient()
 
-async function initTelegram() {
+// ✅ Telegram init (safe even outside Telegram)
+function initTelegram() {
   try {
-    await tgReady()
+    tgReady()
     applyThemeToCssVars()
   } catch {}
 }
 
+// В деяких webview краще після готовності DOM
 if (document.readyState === 'loading') {
-  document.addEventListener(
-    'DOMContentLoaded',
-    () => {
-      void initTelegram()
-    },
-    { once: true },
-  )
+  document.addEventListener('DOMContentLoaded', initTelegram, { once: true })
 } else {
-  void initTelegram()
+  initTelegram()
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

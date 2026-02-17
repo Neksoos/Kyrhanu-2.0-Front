@@ -1,3 +1,4 @@
+// src/api/types.ts
 export type User = {
   id: string
   email: string | null
@@ -35,3 +36,14 @@ export type AchievementsClaimOut = { ok: boolean; achievement_id: string; reward
 export type AchievementsShareCardOut = { card_payload?: unknown; card_url?: string }
 
 export type FastApiErrorBody = { detail: string | unknown }
+
+/**
+ * ---- Compatibility aliases (щоб існуючі імпорти не ламалися) ----
+ * В тебе в коді вже є імпорти типів AuthResponse / Today / ... — додаємо їх як alias.
+ */
+export type AuthResponse = AuthOut
+export type HealthzResponse = HealthzOut
+export type DailyClaimResponse = DailyClaimOut
+export type AchievementClaimResponse = AchievementsClaimOut
+export type AchievementShareCardResponse = AchievementsShareCardOut
+export type Today = TodayState

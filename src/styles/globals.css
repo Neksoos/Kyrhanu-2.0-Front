@@ -54,29 +54,26 @@
   --destructive-foreground: var(--spd-text);
 }
 
-/* Pixel font placeholder. Add a Cyrillic pixel font file into /public/fonts/ to fully satisfy requirement. */
-@font-face {
-  font-family: 'PixelifySans';
-  src: url('/fonts/pixel-cyrillic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 html, body { height: 100%; }
 
 body {
   margin: 0;
   color: rgb(var(--spd-text));
-  font-family: PixelifySans, ui-monospace, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: "Rubik", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   letter-spacing: 0.02em;
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
   text-rendering: geometricPrecision;
   background: rgb(var(--spd-bg));
 }
 
 * { -webkit-tap-highlight-color: transparent; }
+
+/* Optional: pixel font for titles/labels only (requires Google Fonts in index.html) */
+.pixel {
+  font-family: "Press Start 2P", ui-monospace, monospace;
+  letter-spacing: 0.04em;
+}
 
 /* ========== Safe area utilities ========== */
 .safe { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }

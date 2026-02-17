@@ -2,7 +2,6 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json ./
-
 RUN npm install --no-audit --no-fund
 
 COPY . .
@@ -17,4 +16,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+# Railway routes traffic to $PORT, so we rewrite nginx listen port on container start
+CMD ["sh", "-c", "sed -i \"s/listen 80;/listen ${PORT:-80};/\" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

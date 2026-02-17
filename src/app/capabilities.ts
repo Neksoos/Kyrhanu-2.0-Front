@@ -1,68 +1,97 @@
-import { useQuery } from '@tanstack/react-query'
-import { API_BASE_URL, api } from '@/api/client'
-import type { HealthzOut } from '@/api/types'
+import { api } from '@/api/client'
+import { env } from '@/lib/env'
 
 export type Capabilities = {
-  health?: HealthzOut
-  openApiOk: boolean
-  paths: Set<string>
+  hasOpenApi: boolean
+  hasHealthz: boolean
+
+  hasMe: boolean
   hasDailyClaim: boolean
+
+  hasAchievementsList: boolean
   hasAchievementsClaim: boolean
   hasAchievementsShareCard: boolean
-  hasMe: boolean
-  hasInventory: boolean
+
   hasRuns: boolean
+  hasInventory: boolean
   hasShop: boolean
   hasTutorial: boolean
 }
 
-function key(path: string, method: string) {
-  return `${method.toUpperCase()} ${path}`
+function pathExists(openapi: any, path: string, methods?: string[]): boolean {
+  const item = openapi?.paths?.[path]
+  if (!item) return false
+  if (!methods?.length) return true
+  return methods.some((m) => !!item?.[m.toLowerCase()])
 }
 
-async function fetchOpenApi(): Promise<any | null> {
+async function probePath(path: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/openapi.json`, { method: 'GET', credentials: 'include' })
-    if (!res.ok) return null
-    return await res.json()
+    const res = await fetch(`${env.apiBaseUrl}${path}`, { method: 'OPTIONS', credentials: 'include' })
+    if (res.status === 404) return false
+    if (res.status === 405) return true
+    return res.ok || (res.status >= 200 && res.status < 500)
   } catch {
-    return null
+    return false
   }
 }
 
-export function useCapabilities() {
-  return useQuery({
-    queryKey: ['capabilities'],
-    queryFn: async (): Promise<Capabilities> => {
-      const [health, openapi] = await Promise.all([
-        api.get<HealthzOut>('/healthz').catch(() => undefined),
-        fetchOpenApi(),
-      ])
+export async function buildCapabilities(): Promise<Capabilities> {
+  const base: Capabilities = {
+    hasOpenApi: false,
+    hasHealthz: false,
+    hasMe: false,
+    hasDailyClaim: false,
+    hasAchievementsList: false,
+    hasAchievementsClaim: false,
+    hasAchievementsShareCard: false,
+    hasRuns: false,
+    hasInventory: false,
+    hasShop: false,
+    hasTutorial: false,
+  }
 
-      const paths = new Set<string>()
-      const openApiOk = !!openapi?.paths
-      if (openApiOk) {
-        for (const [p, methods] of Object.entries<any>(openapi.paths)) {
-          for (const m of Object.keys(methods ?? {})) paths.add(key(p, m))
-        }
-      }
+  // healthz (hard probe)
+  try {
+    const h = await api.get('/healthz')
+    base.hasHealthz = !!h?.ok
+  } catch {
+    base.hasHealthz = false
+  }
 
-      const has = (p: string, m: string) => (openApiOk ? paths.has(key(p, m)) : false)
+  // openapi (best effort)
+  let hasOpenApi = false
+  let openapi: any = null
+  try {
+    const res = await fetch(`${env.apiBaseUrl}/openapi.json`, { credentials: 'include' })
+    if (res.ok) {
+      openapi = await res.json()
+      hasOpenApi = true
+    }
+  } catch {
+    // ignore
+  }
+  base.hasOpenApi = hasOpenApi
 
-      return {
-        health,
-        openApiOk,
-        paths,
-        hasDailyClaim: has('/daily/claim', 'post'),
-        hasAchievementsClaim: has('/achievements/claim', 'post'),
-        hasAchievementsShareCard: has('/achievements/share-card', 'get'),
-        hasMe: has('/me', 'get'),
-        hasInventory: has('/inventory', 'get'),
-        hasRuns: has('/runs/start', 'post') && has('/runs/act', 'post'),
-        hasShop: has('/shop/offers', 'get'),
-        hasTutorial: has('/tutorial/state', 'get'),
-      }
-    },
-    staleTime: 60_000,
-  })
+  const checks: Array<[keyof Capabilities, string, string[]]> = [
+    ['hasMe', '/me', ['get']],
+    ['hasDailyClaim', '/daily/claim', ['post']],
+    ['hasAchievementsList', '/achievements', ['get']],
+    ['hasAchievementsClaim', '/achievements/claim', ['post']],
+    ['hasAchievementsShareCard', '/achievements/share-card', ['get']],
+    ['hasRuns', '/runs/start', ['post']],
+    ['hasInventory', '/inventory', ['get']],
+    ['hasShop', '/shop', ['get']],
+    ['hasTutorial', '/tutorial', ['get']],
+  ]
+
+  for (const [key, path, methods] of checks) {
+    if (hasOpenApi) {
+      base[key] = pathExists(openapi, path, methods)
+    } else {
+      base[key] = await probePath(path)
+    }
+  }
+
+  return base
 }

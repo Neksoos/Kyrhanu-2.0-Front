@@ -37,7 +37,11 @@
   "home": {
     "title": "Camp",
     "subtitle": "Today’s fate",
+    "cta_start": "Start adventure",
+    "cta_continue": "Continue adventure",
     "cta_daily": "Daily rebirth",
+    "cta_inventory": "Inventory",
+    "cta_shop": "Shop",
     "cta_achievements": "Glory seals",
     "cta_settings": "Settings",
     "no_me_backend": "Profile (/me) is not available on the server yet. Showing minimal mode.",
@@ -65,13 +69,39 @@
     "share_ready": "Share card is ready"
   },
   "run": {
-    "title": "Run"
+    "title": "Adventure",
+    "no_active": "No active adventure.",
+    "cta_start": "Start",
+    "cta_finish": "Finish",
+    "cta_inventory": "View reward",
+    "hp": "HP",
+    "energy": "Energy",
+    "gold": "Gold",
+    "progress": "Step {{step}} / {{total}}",
+    "combat_title": "Combat",
+    "enemy_hp": "Enemy HP: {{hp}}/{{max}}",
+    "act_attack": "Attack",
+    "act_defend": "Defend",
+    "act_skill": "Skill",
+    "combat_log": "Turn",
+    "log_title": "Log",
+    "victory": "Victory",
+    "defeat": "Defeat",
+    "rewards_title": "Rewards",
+    "reward_gold": "Gold",
+    "reward_items": "Items"
   },
   "inventory": {
-    "title": "Inventory"
+    "title": "Inventory",
+    "equip": "Equip",
+    "unequip": "Unequip",
+    "equipped": "Equipped"
   },
   "shop": {
-    "title": "Shop"
+    "title": "Shop",
+    "buy": "Buy",
+    "price": "Price",
+    "bought_toast": "Purchase successful"
   },
   "tutorial": {
     "title": "Tutorial"

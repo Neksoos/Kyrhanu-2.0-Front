@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -9,12 +9,12 @@ import { toast } from 'sonner'
 import { endpoints } from '@/api/endpoints'
 import type { DailyVariant, Today } from '@/api/types'
 import { useCapabilities } from '@/app/useCapabilities'
-import { withTgParams } from '@/lib/tgNavigate'
+import { useTgNavigate, withTgParams } from '@/lib/tgNavigate'
 
 const VARIANTS: DailyVariant[] = ['A', 'B', 'C']
 
 export function DailyPage() {
-  const nav = useNavigate()
+  const nav = useTgNavigate()
   const location = useLocation()
   const qc = useQueryClient()
   const { t } = useTranslation()
@@ -24,13 +24,25 @@ export function DailyPage() {
 
   const claim = useMutation({
     mutationFn: async (variant: DailyVariant) => endpoints.daily.claim({ variant }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (res?.today) qc.setQueryData<Today | null>(['daily:today'], res.today)
       toast.success(t('daily.claimed_toast'))
 
-      // ✅ Після вибору долі переходимо на головну.
-      // Важливо: зберігаємо TG params (hash/query), інакше Telegram WebApp може "загубити" контекст.
-      nav(withTgParams('/home', location), { replace: true })
+      // ✅ Після claim: resume current run або start new.
+      try {
+        const cur = await endpoints.runs.current()
+        if (cur?.run) {
+          nav('/run', { replace: true })
+          return
+        }
+        await endpoints.runs.start()
+        nav('/run', { replace: true })
+      } catch (e: any) {
+        console.error(e)
+        toast.error(t('errors.backend_generic', { message: e?.detail ?? 'Error' }))
+        // fallback: home
+        nav(withTgParams('/home', location), { replace: true })
+      }
     },
     onError: (e: any) => toast.error(t('errors.backend_generic', { message: e?.detail ?? 'Error' })),
   })

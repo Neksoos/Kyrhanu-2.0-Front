@@ -37,7 +37,11 @@
   "home": {
     "title": "Obóz",
     "subtitle": "Dzisiejszy los",
+    "cta_start": "Rozpocznij przygodę",
+    "cta_continue": "Kontynuuj przygodę",
     "cta_daily": "Codzienne odrodzenie",
+    "cta_inventory": "Ekwipunek",
+    "cta_shop": "Sklep",
     "cta_achievements": "Pieczęcie chwały",
     "cta_settings": "Ustawienia",
     "no_me_backend": "Profil (/me) nie jest jeszcze dostępny na serwerze. Tryb minimalny.",
@@ -65,13 +69,39 @@
     "share_ready": "Karta gotowa"
   },
   "run": {
-    "title": "Bieg"
+    "title": "Przygoda",
+    "no_active": "Brak aktywnej przygody.",
+    "cta_start": "Start",
+    "cta_finish": "Zakończ",
+    "cta_inventory": "Zobacz nagrodę",
+    "hp": "HP",
+    "energy": "Energia",
+    "gold": "Złoto",
+    "progress": "Krok {{step}} / {{total}}",
+    "combat_title": "Walka",
+    "enemy_hp": "HP wroga: {{hp}}/{{max}}",
+    "act_attack": "Atak",
+    "act_defend": "Obrona",
+    "act_skill": "Umiejętność",
+    "combat_log": "Tura",
+    "log_title": "Dziennik",
+    "victory": "Zwycięstwo",
+    "defeat": "Porażka",
+    "rewards_title": "Nagrody",
+    "reward_gold": "Złoto",
+    "reward_items": "Przedmioty"
   },
   "inventory": {
-    "title": "Ekwipunek"
+    "title": "Ekwipunek",
+    "equip": "Załóż",
+    "unequip": "Zdejmij",
+    "equipped": "Założone"
   },
   "shop": {
-    "title": "Sklep"
+    "title": "Sklep",
+    "buy": "Kup",
+    "price": "Cena",
+    "bought_toast": "Zakup udany"
   },
   "tutorial": {
     "title": "Samouczek"

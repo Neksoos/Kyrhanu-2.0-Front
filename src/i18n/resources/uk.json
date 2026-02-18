@@ -37,7 +37,11 @@
   "home": {
     "title": "Січ",
     "subtitle": "Сьогоднішня доля",
+    "cta_start": "Почати пригоду",
+    "cta_continue": "Продовжити пригоду",
     "cta_daily": "Щоденне переродження",
+    "cta_inventory": "Інвентар",
+    "cta_shop": "Крамниця",
     "cta_achievements": "Печаті слави",
     "cta_settings": "Налаштування",
     "no_me_backend": "Профіль (/me) поки недоступний на сервері. Показуємо мінімальний режим.",
@@ -65,13 +69,39 @@
     "share_ready": "Share-card готова"
   },
   "run": {
-    "title": "Забіг"
+    "title": "Пригода",
+    "no_active": "Немає активної пригоди.",
+    "cta_start": "Почати",
+    "cta_finish": "Завершити",
+    "cta_inventory": "Подивитись нагороду",
+    "hp": "Життя",
+    "energy": "Сила",
+    "gold": "Червонці",
+    "progress": "Крок {{step}} / {{total}}",
+    "combat_title": "Бій",
+    "enemy_hp": "HP ворога: {{hp}}/{{max}}",
+    "act_attack": "Удар",
+    "act_defend": "Захист",
+    "act_skill": "Навичка",
+    "combat_log": "Хід",
+    "log_title": "Журнал",
+    "victory": "Перемога",
+    "defeat": "Поразка",
+    "rewards_title": "Нагорода",
+    "reward_gold": "Червонці",
+    "reward_items": "Предмети"
   },
   "inventory": {
-    "title": "Інвентар"
+    "title": "Інвентар",
+    "equip": "Екіпірувати",
+    "unequip": "Зняти",
+    "equipped": "Екіпіровано"
   },
   "shop": {
-    "title": "Крамниця"
+    "title": "Крамниця",
+    "buy": "Купити",
+    "price": "Ціна",
+    "bought_toast": "Покупка успішна"
   },
   "tutorial": {
     "title": "Навчання"

@@ -7,6 +7,12 @@ import { DailyPage } from '@/features/daily/DailyPage'
 import { HomeMePage } from '@/features/home_me/HomeMePage'
 import { NotFoundPage } from '@/features/home_me/NotFoundPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { AchievementsPage } from '@/features/achievements/AchievementsPage'
+import { InventoryPage } from '@/features/inventory/InventoryPage'
+import { ShopPage } from '@/features/shop/ShopPage'
+import { RunPage } from '@/features/runs/RunPage'
+import { TutorialPage } from '@/features/tutorial/TutorialPage'
+import { PatronPage } from '@/features/patron/PatronPage'
 
 import { storage } from '@/lib/storage'
 import { withTgParams } from '@/lib/tgNavigate'
@@ -32,6 +38,12 @@ export default function App() {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/daily" element={<DailyPage />} />
             <Route path="/home" element={<HomeMePage />} />
+          <Route path="/run" element={<RunPage />} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
+          <Route path="/patron" element={<PatronPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

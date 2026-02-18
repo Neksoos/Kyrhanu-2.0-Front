@@ -8,9 +8,7 @@ import App from './App'
 import './styles/globals.css'
 
 import { applyThemeToCssVars, tgReady } from '@/lib/telegram'
-import { initI18n } from '@/lib/i18n'
 
-initI18n()
 applyThemeToCssVars()
 tgReady()
 
@@ -20,9 +18,17 @@ const queryClient = new QueryClient({
   },
 })
 
+// Railway/Telegram часто відкриває мініапку на /app/…
+// Без basename React Router бачить шлях /app/* як «невідомий» і показує 404.
+// Тому динамічно вмикаємо basename, якщо ми під /app.
+const basename = (() => {
+  const p = window.location.pathname
+  return p === '/app' || p.startsWith('/app/') ? '/app' : ''
+})()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={basename || undefined}>
       <QueryClientProvider client={queryClient}>
         <App />
         <Toaster richColors closeButton />

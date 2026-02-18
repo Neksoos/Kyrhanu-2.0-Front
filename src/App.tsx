@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
 import { TopBar } from '@/components/TopBar'
@@ -10,19 +10,21 @@ import { NotFoundPage } from '@/features/home_me/NotFoundPage'
 
 import { storage } from '@/lib/storage'
 
-export default function App() {
+function AppRoutes() {
+  const location = useLocation()
+
+  const targetPath = storage.getAccessToken() ? '/daily' : '/auth'
+  const to = `${targetPath}${location.search}${location.hash}`
+
   return (
-    <BrowserRouter>
+    <>
       <Toaster richColors position="top-center" />
       <TopBar />
 
       <div className="min-h-screen w-full">
         <div className="mx-auto w-full max-w-screen-xl px-4 py-6">
           <Routes>
-            <Route
-              path="/"
-              element={<Navigate to={storage.getAccessToken() ? '/daily' : '/auth'} replace />}
-            />
+            <Route path="/" element={<Navigate to={to} replace />} />
 
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/daily" element={<DailyPage />} />
@@ -33,6 +35,14 @@ export default function App() {
           </Routes>
         </div>
       </div>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   )
 }

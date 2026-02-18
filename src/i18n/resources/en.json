@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Cursed Kurgans"
+  },
   "common": {
     "app_name": "Cursed Kurgans",
     "loading": "Loading…",
@@ -127,6 +130,11 @@
     "cta_not_now": "Not now",
     "cta_open_jar": "Open jar",
     "thanks": "Thanks for your support!"
+  },
+  "items": {
+    "herbal_kit": { "name": "Herbal Kit" },
+    "leather_vest": { "name": "Leather Vest" },
+    "rusty_saber": { "name": "Rusty Saber" }
   },
   "errors": {
     "backend_generic": "Error: {{message}}",

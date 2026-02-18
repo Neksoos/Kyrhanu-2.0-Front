@@ -8,7 +8,7 @@ import type { InventoryItem } from '@/api/types'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useTgNavigate } from '@/lib/tgNavigate'
+import { PageTopBar } from '@/components/PageTopBar'
 
 function ItemCard({
   item,
@@ -28,7 +28,9 @@ function ItemCard({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="spd-label text-outline-2">{item.name}</div>
+          <div className="spd-label text-outline-2">
+            {t(`items.${item.item_id}.name`, { defaultValue: item.name })}
+          </div>
           <div className="text-xs text-mutedForeground">{item.slot || 'misc'}</div>
         </div>
       </CardHeader>
@@ -53,7 +55,6 @@ function ItemCard({
 
 export function InventoryPage() {
   const { t } = useTranslation()
-  const nav = useTgNavigate()
 
   const invQ = useQuery({
     queryKey: ['inventory'],
@@ -89,24 +90,32 @@ export function InventoryPage() {
   }, [equipment])
 
   return (
-    <div className="safe px-4 pb-20 pt-4 spd-bg min-h-dvh">
-      <div className="mx-auto w-full max-w-md space-y-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="spd-label text-outline-2">{t('inventory.title')}</div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-xs text-mutedForeground">weapon: {equipment.weapon ? '✓' : '—'}</div>
-            <div className="text-xs text-mutedForeground">armor: {equipment.armor ? '✓' : '—'}</div>
-            <div className="text-xs text-mutedForeground">trinket: {equipment.trinket ? '✓' : '—'}</div>
-            <div className="spd-divider" />
-            <Button variant="spd" spdTone="neutral" className="w-full" onClick={() => nav('/home')}>
-              {t('common.nav_home')}
-            </Button>
-          </CardContent>
-        </Card>
+    <div className="spd-bg min-h-dvh">
+      <div className="safe px-4 pb-20">
+        <PageTopBar title={t('inventory.title')} backTo="/home" />
 
-        <div className="space-y-3">
+        <div className="mx-auto w-full max-w-md space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="text-sm font-semibold text-[rgb(var(--spd-text))]">{t('inventory.equipped')}</div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                <div className="text-[11px] text-mutedForeground">weapon</div>
+                <div className="text-sm font-semibold">{equipment.weapon ? '✓' : '—'}</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                <div className="text-[11px] text-mutedForeground">armor</div>
+                <div className="text-sm font-semibold">{equipment.armor ? '✓' : '—'}</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center">
+                <div className="text-[11px] text-mutedForeground">trinket</div>
+                <div className="text-sm font-semibold">{equipment.trinket ? '✓' : '—'}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-3">
           {(invQ.data?.items ?? []).map((it) => {
             const slot = equippedByInstance[it.item_instance_id] ?? null
             return (
@@ -126,6 +135,7 @@ export function InventoryPage() {
               <CardContent className="py-6 text-sm text-mutedForeground">{t('common.soon_body')}</CardContent>
             </Card>
           ) : null}
+          </div>
         </div>
       </div>
     </div>

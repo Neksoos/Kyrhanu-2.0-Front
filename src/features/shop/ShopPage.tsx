@@ -6,11 +6,10 @@ import { endpoints } from '@/api/endpoints'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useTgNavigate } from '@/lib/tgNavigate'
+import { PageTopBar } from '@/components/PageTopBar'
 
 export function ShopPage() {
   const { t } = useTranslation()
-  const nav = useTgNavigate()
 
   const shopQ = useQuery({
     queryKey: ['shop'],
@@ -33,32 +32,34 @@ export function ShopPage() {
   const busy = shopQ.isFetching || buyM.isPending
 
   return (
-    <div className="safe px-4 pb-20 pt-4 spd-bg min-h-dvh">
-      <div className="mx-auto w-full max-w-md space-y-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="spd-label text-outline-2">{t('shop.title')}</div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="spd" spdTone="neutral" className="w-full" onClick={() => nav('/home')}>
-              {t('common.nav_home')}
-            </Button>
-          </CardContent>
-        </Card>
+    <div className="spd-bg min-h-dvh">
+      <div className="safe px-4 pb-20">
+        <PageTopBar title={t('shop.title')} backTo="/home" />
 
-        <div className="space-y-3">
+        <div className="mx-auto w-full max-w-md space-y-3">
           {(shopQ.data?.offers ?? []).map((o) => (
             <Card key={o.offer_id}>
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="spd-label text-outline-2">{o.name}</div>
-                  <div className="text-xs text-mutedForeground">{o.slot}</div>
-                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="spd-label text-outline-2 truncate">
+                      {t(`items.${o.item_id}.name`, { defaultValue: o.name })}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-mutedForeground">
+                        {o.slot}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-mutedForeground">
+                        {o.rarity}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-xs text-mutedForeground">{t('shop.price')}</div>
+                    <div className="text-lg font-semibold text-[rgb(var(--spd-text))]">{o.price_chervontsi}</div>
+                  </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="text-xs text-mutedForeground">
-                  {t('shop.price')}: {o.price_chervontsi}
-                </div>
                 <Button
                   variant="spd"
                   spdTone="primary"

@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Przeklęte kurhany"
+  },
   "common": {
     "app_name": "Przeklęte Kurhany",
     "loading": "Ładowanie…",
@@ -127,6 +130,11 @@
     "cta_not_now": "Nie teraz",
     "cta_open_jar": "Otwórz skarbonkę",
     "thanks": "Dzięki za wsparcie!"
+  },
+  "items": {
+    "herbal_kit": { "name": "Zestaw ziołowy" },
+    "leather_vest": { "name": "Skórzana kamizelka" },
+    "rusty_saber": { "name": "Zardzewiała szabla" }
   },
   "errors": {
     "backend_generic": "Błąd: {{message}}",

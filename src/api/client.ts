@@ -31,6 +31,7 @@ async function apiFetch<T>(
     query?: Record<string, string | number | boolean | undefined | null>
     headers?: Record<string, string>
   },
+  retry?: { triedRefresh?: boolean },
 ): Promise<T> {
   const qs = new URLSearchParams()
   if (opts?.query) {
@@ -61,6 +62,33 @@ async function apiFetch<T>(
   })
 
   const data = await parseJsonSafe(res)
+
+  // ✅ Auto-refresh access token once on 401 (common in TG WebViews)
+  if (
+    res.status === 401 &&
+    !retry?.triedRefresh &&
+    typeof path === 'string' &&
+    !path.startsWith('/auth/')
+  ) {
+    try {
+      const rr = await fetch(joinUrl(env.apiBaseUrl, '/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        credentials: 'include',
+      })
+
+      const rd = await parseJsonSafe(rr)
+      const newToken = (rd as any)?.accessToken
+      if (rr.ok && typeof newToken === 'string' && newToken.trim()) {
+        storage.setAccessToken(newToken)
+        // retry original request once
+        return apiFetch<T>(method, path, opts, { triedRefresh: true })
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   if (!res.ok) {
     const detail =

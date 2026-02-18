@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Прокляті Кургани"
+  },
   "common": {
     "app_name": "Прокляті Кургани",
     "loading": "Завантаження…",
@@ -127,6 +130,11 @@
     "cta_not_now": "Не зараз",
     "cta_open_jar": "Відкрити банку",
     "thanks": "Дякуємо за підтримку!"
+  },
+  "items": {
+    "herbal_kit": { "name": "Трав'яний набір" },
+    "leather_vest": { "name": "Шкіряний жилет" },
+    "rusty_saber": { "name": "Іржава шабля" }
   },
   "errors": {
     "backend_generic": "Помилка: {{message}}",

@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export function NotFoundPage() {
   const { t } = useTranslation()
+  const nav = useNavigate()
+  const location = useLocation()
 
   return (
     <div className="safe min-h-dvh spd-bg px-4 py-6">
@@ -15,11 +17,17 @@ export function NotFoundPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-mutedForeground">{t('common.not_found_body')}</div>
-            <Link to="/home" className="block">
-              <Button variant="spd" spdTone="neutral" className="w-full">
-                {t('common.nav_home')}
-              </Button>
-            </Link>
+            <Button
+              variant="spd"
+              spdTone="neutral"
+              className="w-full"
+              onClick={() => {
+                // Telegram WebView інколи не відпрацьовує Link-клік нормально → навігація через useNavigate
+                nav({ pathname: '/home', search: location.search, hash: location.hash }, { replace: true })
+              }}
+            >
+              {t('common.nav_home')}
+            </Button>
           </CardContent>
         </Card>
       </div>

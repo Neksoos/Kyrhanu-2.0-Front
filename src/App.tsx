@@ -5,33 +5,32 @@ import { TopBar } from '@/components/TopBar'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { DailyPage } from '@/features/daily/DailyPage'
 import { HomeMePage } from '@/features/home_me/HomeMePage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
 import { NotFoundPage } from '@/features/home_me/NotFoundPage'
+import { PatronPage } from '@/features/patron/PatronPage'
+import { SettingsPage } from '@/features/settings/SettingsPage'
 
 import { storage } from '@/lib/storage'
 import { tg } from '@/lib/telegram'
+import { INITIAL_TG_HASH, INITIAL_TG_SEARCH } from '@/lib/tgParams'
 
 function getRuntimeBasename(): string {
-  // Railway/Telegram can open the app under a sub-path (for example: /app).
-  // If we don't set basename, routes like "/home" won't match "/app/home".
   if (typeof window === 'undefined') return ''
-
   const p = window.location.pathname
-
-  // Common case: Telegram WebApp URL set to https://<domain>/app
   if (p === '/app' || p.startsWith('/app/')) return '/app'
-
-  // If Vite base is configured, respect it.
   const viteBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
   if (viteBase && viteBase !== '/' && (p === viteBase || p.startsWith(viteBase + '/'))) return viteBase
-
   return ''
 }
 
+// Router повинен бути СТАБІЛЬНИЙ весь час
+const ROUTER_KIND: 'browser' | 'hash' = tg.isInTelegram() && !INITIAL_TG_HASH ? 'hash' : 'browser'
+
 function AppRoutes() {
   const location = useLocation()
+  const preserveSearch = location.search || INITIAL_TG_SEARCH
+  const preserveHash = location.hash || INITIAL_TG_HASH
 
-  const to = `/${storage.getAccessToken() ? 'daily' : 'auth'}${location.search}${location.hash}`
+  const targetPath = storage.getAccessToken() ? '/daily' : '/auth'
 
   return (
     <>
@@ -41,12 +40,18 @@ function AppRoutes() {
       <div className="min-h-screen w-full">
         <div className="mx-auto w-full max-w-screen-xl px-4 py-6">
           <Routes>
-            <Route path="/" element={<Navigate to={to} replace />} />
+            <Route
+              path="/"
+              element={
+                <Navigate to={{ pathname: targetPath, search: preserveSearch, hash: preserveHash }} replace />
+              }
+            />
 
             <Route path="/auth/*" element={<AuthPage />} />
             <Route path="/daily/*" element={<DailyPage />} />
             <Route path="/home/*" element={<HomeMePage />} />
             <Route path="/settings/*" element={<SettingsPage />} />
+            <Route path="/patron/*" element={<PatronPage />} />
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
@@ -57,10 +62,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  // ✅ HashRouter стабільніший в Telegram WebView, але якщо tgWebAppData у hash — HashRouter ламає все
-  const hasTgHashData = typeof window !== 'undefined' && window.location.hash.includes('tgWebAppData=')
-  const Router = tg.isInTelegram() && !hasTgHashData ? HashRouter : BrowserRouter
-
+  const Router = ROUTER_KIND === 'hash' ? HashRouter : BrowserRouter
   const basename = getRuntimeBasename()
 
   return (

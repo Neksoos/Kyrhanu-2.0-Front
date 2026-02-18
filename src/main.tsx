@@ -1,34 +1,32 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
 
 import App from './App'
 import './styles/globals.css'
 
 import { applyThemeToCssVars, tgReady } from '@/lib/telegram'
+import { initI18n } from '@/lib/i18n'
 
-// ✅ щоб не створювався заново при HMR/StrictMode
-const queryClient = new QueryClient()
+initI18n()
+applyThemeToCssVars()
+tgReady()
 
-// ✅ Telegram init (safe even outside Telegram)
-function initTelegram() {
-  try {
-    tgReady()
-    applyThemeToCssVars()
-  } catch {}
-}
-
-// В деяких webview краще після готовності DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTelegram, { once: true })
-} else {
-  initTelegram()
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, refetchOnWindowFocus: false },
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <App />
+        <Toaster richColors closeButton />
+      </QueryClientProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 )

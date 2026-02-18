@@ -15,7 +15,9 @@ function RootRedirect() {
   const location = useLocation()
   const token = storage.getAccessToken()
 
-  return <Navigate to={withTgParams(token ? '/daily' : '/auth', location) as any} replace />
+  // ✅ Якщо користувач уже авторизований — ведемо на головний екран.
+  // Daily (вибір долі) лишається окремою сторінкою, куди можна зайти з Home.
+  return <Navigate to={withTgParams(token ? '/home' : '/auth', location) as any} replace />
 }
 
 export default function App() {

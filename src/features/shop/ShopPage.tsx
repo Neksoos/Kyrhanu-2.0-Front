@@ -45,6 +45,7 @@ export function ShopPage() {
                     <div className="spd-label text-outline-2 truncate">
                       {t(`items.${o.item_id}.name`, { defaultValue: o.name })}
                     </div>
+
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-mutedForeground">
                         {o.slot}
@@ -54,11 +55,14 @@ export function ShopPage() {
                       </span>
                     </div>
                   </div>
+
                   <div className="shrink-0 text-right">
                     <div className="text-xs text-mutedForeground">{t('shop.price')}</div>
                     <div className="text-lg font-semibold text-[rgb(var(--spd-text))]">{o.price_chervontsi}</div>
                   </div>
+                </div>
               </CardHeader>
+
               <CardContent className="space-y-2">
                 <Button
                   variant="spd"

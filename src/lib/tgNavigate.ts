@@ -37,14 +37,38 @@ export function withTgParams(pathname: string, loc?: LocPick): To {
 /**
  * React Router navigate() wrapper that keeps Telegram Mini App query/hash params
  * between in-app navigations.
+ *
+ * Accepts both string paths and `To` objects (PartialPath).
  */
 export function useTgNavigate() {
   const navigate = useNavigate()
   const loc = useLocation()
 
   return React.useCallback(
-    (to: string, options?: NavigateOptions) => {
-      navigate(withTgParams(to, loc), options)
+    (to: To, options?: NavigateOptions) => {
+      // If caller passes string -> normal
+      if (typeof to === 'string') {
+        navigate(withTgParams(to, loc), options)
+        return
+      }
+
+      // If caller passes object -> merge TG params into its pathname,
+      // but keep its own search/hash if provided.
+      const pathname = (to as any)?.pathname ?? '/'
+      const wrapped = withTgParams(pathname, loc)
+
+      // wrapped is an object {pathname, search, hash}, but we must respect explicit to.search/to.hash
+      const finalTo: To =
+        typeof wrapped === 'string'
+          ? wrapped
+          : {
+              ...wrapped,
+              ...(to as any),
+              // If to.search or to.hash are explicitly set, they win.
+              // If they are missing/empty, wrapped already contains TG params.
+            }
+
+      navigate(finalTo, options)
     },
     [navigate, loc],
   )

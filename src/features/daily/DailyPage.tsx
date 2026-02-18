@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -9,12 +9,12 @@ import { toast } from 'sonner'
 import { endpoints } from '@/api/endpoints'
 import type { DailyVariant, Today } from '@/api/types'
 import { useCapabilities } from '@/app/useCapabilities'
-import { withTgParams } from '@/lib/tgNavigate'
+import { useTgNavigate, withTgParams } from '@/lib/tgNavigate'
 
 const VARIANTS: DailyVariant[] = ['A', 'B', 'C']
 
 export function DailyPage() {
-  const nav = useNavigate()
+  const nav = useTgNavigate()
   const location = useLocation()
   const qc = useQueryClient()
   const { t } = useTranslation()
@@ -27,7 +27,9 @@ export function DailyPage() {
     onSuccess: (res) => {
       if (res?.today) qc.setQueryData<Today | null>(['daily:today'], res.today)
       toast.success(t('daily.claimed_toast'))
-      nav(withTgParams('/home', location), { replace: true })
+
+      // На корінь — RootRedirect сам відправить на потрібну сторінку.
+      nav(withTgParams('/', location), { replace: true })
     },
     onError: (e: any) => toast.error(t('errors.backend_generic', { message: e?.detail ?? 'Error' })),
   })
@@ -46,12 +48,8 @@ export function DailyPage() {
               <div className="space-y-2">
                 <div className="text-sm text-mutedForeground">{t('common.soon_body')}</div>
                 <div className="spd-divider" />
-                <Button
-                  variant="spd"
-                  spdTone="neutral"
-                  className="w-full"
-                  onClick={() => nav(withTgParams('/home', location))}
-                >
+
+                <Button variant="spd" spdTone="neutral" className="w-full" onClick={() => nav(withTgParams('/', location))}>
                   {t('common.nav_home')}
                 </Button>
               </div>

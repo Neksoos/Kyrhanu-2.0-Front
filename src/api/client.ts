@@ -1,51 +1,45 @@
-import { API_BASE_URL } from '@/lib/env'
+import { env } from '@/lib/env'
+import { storage } from '@/lib/storage'
 
-let accessToken = ''
+let accessToken: string | null = null
 
-export function setAccessToken(token: string) {
+export function setAccessToken(token: string | null) {
   accessToken = token
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${path}`
+function getToken() {
+  return accessToken ?? storage.getAccessToken()
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken()
 
   const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
     'Content-Type': 'application/json',
+    ...(init?.headers as any),
   }
 
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  if (token) headers.Authorization = `Bearer ${token}`
 
-  const res = await fetch(url, {
-    ...options,
+  const res = await fetch(`${env.apiBaseUrl}${path}`, {
+    ...init,
     headers,
-    credentials: 'include',
   })
 
-  if (res.status === 401) {
-    const refreshed = await refreshToken()
-    if (refreshed) return apiFetch<T>(path, options)
-  }
-
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `HTTP ${res.status}`)
+    let detail = 'Request failed'
+    try {
+      const data = await res.json()
+      detail = data?.detail ?? detail
+    } catch {}
+    throw { status: res.status, detail }
   }
 
   return res.json()
 }
 
-async function refreshToken() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    if (!res.ok) return false
-    const data = await res.json()
-    setAccessToken(data.accessToken)
-    return true
-  } catch {
-    return false
-  }
+export const api = {
+  get: <T>(path: string) => apiFetch<T>(path),
+  post: <T>(path: string, body?: any) =>
+    apiFetch<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : '{}' }),
 }

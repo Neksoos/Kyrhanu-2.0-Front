@@ -1,36 +1,28 @@
-// src/lib/storage.ts
-
-const ACCESS_TOKEN_KEY = 'access_token'
-
-let inMemoryAccessToken: string | null = null
-
-export function getAccessToken(): string | null {
-  if (inMemoryAccessToken) return inMemoryAccessToken
-
-  try {
-    const t = localStorage.getItem(ACCESS_TOKEN_KEY)
-    inMemoryAccessToken = t
-    return t
-  } catch {
-    return null
-  }
-}
-
-export function setAccessToken(token: string | null): void {
-  inMemoryAccessToken = token
-
-  try {
-    if (token) localStorage.setItem(ACCESS_TOKEN_KEY, token)
-    else localStorage.removeItem(ACCESS_TOKEN_KEY)
-  } catch {}
-}
-
-export function clearAll(): void {
-  setAccessToken(null)
-}
+const KEY = 'kyrhanu:accessToken'
 
 export const storage = {
-  getAccessToken,
-  setAccessToken,
-  clearAll,
+  getAccessToken(): string | null {
+    try {
+      return localStorage.getItem(KEY)
+    } catch {
+      return null
+    }
+  },
+
+  setAccessToken(token: string | null) {
+    try {
+      if (!token) localStorage.removeItem(KEY)
+      else localStorage.setItem(KEY, token)
+    } catch {}
+  },
+
+  clearAll() {
+    try {
+      localStorage.removeItem(KEY)
+    } catch {}
+  },
+
+  clear() {
+    storage.clearAll()
+  },
 }

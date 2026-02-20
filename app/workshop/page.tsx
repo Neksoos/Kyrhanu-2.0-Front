@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { resolveTgId } from "@/lib/tg";
+import { getJSON, postJSON } from "@/lib/api";
 
 // ================= TYPES =================
 type ProfessionKind = "gathering" | "craft";
@@ -50,8 +51,11 @@ type Recipe = {
   name: string;
   descr?: string;
   level_required?: number;
+  level_req?: number;
   energy_cost?: number;
 };
+
+type RecipesResponse = { recipes?: Recipe[] } | Recipe[];
 
 function cx(...s: Array<string | false | null | undefined>) {
   return s.filter(Boolean).join(" ");
@@ -83,13 +87,8 @@ export default function WorkshopPage() {
 
   // ================= PROFESSIONS =================
   const { data: meData } = useSWR<MeResponse>(
-    tgId ? [`/api/proxy/api/professions/me`, tgId] : null,
-    async ([url, id]) => {
-      const res = await fetch(url, {
-        headers: { "X-Tg-Id": String(id) },
-      });
-      return res.json();
-    }
+    tgId ? ["/api/professions/me", tgId] : null,
+    async ([url]) => getJSON<MeResponse>(url)
   );
 
   const owned = useMemo(() => {
@@ -111,16 +110,13 @@ export default function WorkshopPage() {
     try {
       const endpoint =
         prof === "alchemist"
-          ? "/api/proxy/api/alchemy/recipes"
-          : `/api/proxy/api/craft/recipes?profession=${prof}`;
+          ? "/api/alchemy/recipes"
+          : `/api/craft/recipes?profession=${prof}`;
 
-      const res = await fetch(endpoint, {
-        headers: { "X-Tg-Id": String(tgId) },
-      });
-
-      const data = await res.json();
-      setRecipes(data.recipes || []);
-    } catch (e: any) {
+      const data = await getJSON<RecipesResponse>(endpoint);
+      const normalized = Array.isArray(data) ? data : data?.recipes ?? [];
+      setRecipes(normalized);
+    } catch (_e: any) {
       setError("Помилка завантаження рецептів");
     }
 
@@ -140,31 +136,14 @@ export default function WorkshopPage() {
 
     try {
       if (activeProf === "alchemist") {
-        const res = await fetch("/api/proxy/api/alchemy/brew", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Tg-Id": String(tgId),
-          },
-          body: JSON.stringify({ recipe_code: code }),
-        });
-
-        if (!res.ok) throw new Error("Помилка варіння");
+        await postJSON("/api/alchemy/brew", { recipe_code: code });
         setMessage("🧪 Зілля поставлено в чергу.");
       } else {
-        const res = await fetch("/api/proxy/api/craft/craft", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Tg-Id": String(tgId),
-          },
-          body: JSON.stringify({ recipe_code: code, qty: 1 }),
+        const data = await postJSON<{ crafted?: number; xp_gained?: number }>("/api/craft/craft", {
+          recipe_code: code,
+          qty: 1,
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.detail || "Craft error");
-
-        setMessage(`✨ Створено ${data.crafted} • XP +${data.xp_gained}`);
+        setMessage(`✨ Створено ${data.crafted ?? 1} • XP +${data.xp_gained ?? 0}`);
       }
     } catch (e: any) {
       setError(e.message);
@@ -279,9 +258,9 @@ export default function WorkshopPage() {
                       <div className="text-xs text-slate-300">
                         {r.descr}
                       </div>
-                      {r.level_required && (
+                      {(r.level_required || r.level_req) && (
                         <div className="text-xs mt-1">
-                          Рівень: {r.level_required}
+                          Рівень: {r.level_required ?? r.level_req}
                         </div>
                       )}
                       <button

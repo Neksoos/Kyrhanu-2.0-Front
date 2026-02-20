@@ -117,12 +117,20 @@ const PROF_UI_META: Record<string, ProfessionUiMeta> = {
       "Мішaє трави, гриби й рідкісні інгредієнти, створюючи лікувальні та бойові зілля.",
     icon: "⚗️",
   },
+  weaver: {
+    short: "Тче тканину й легку броню",
+    description:
+      "Працює з нитками, волокнами і шкірою, створюючи мантії, накидки та легке спорядження.",
+    icon: "🧵",
+  },
 };
 
 // ---------- Переходи на сторінки професій ----------
 const PROF_PAGES: Record<string, string> = {
   alchemist: "/professions/alchemy",
-  // потім додаси інші
+  blacksmith: "/professions/blacksmith",
+  jeweler: "/professions/jeweler",
+  weaver: "/professions/weaver",
 };
 
 // ------------------------------------------------------------
@@ -183,6 +191,7 @@ export default function ProfessionsPage() {
 
   const totalProfCount = meData?.professions?.length ?? 0;
   const hasAnyProfession = totalProfCount > 0;
+  const playerLevel = meData?.player_level ?? 1;
 
   const limits = meData?.limits;
   const secondCost =
@@ -324,9 +333,9 @@ export default function ProfessionsPage() {
             </div>
           )}
 
-          {hasAnyProfession && (
+          {hasAnyProfession && limits && (
             <div className="mt-3 text-[11px] text-amber-300">
-              Одночасно можна мати до <b>двох</b> професій.
+              Ліміт професій: збиральні до <b>{limits.gathering.max}</b>, крафтові до <b>{limits.craft.max}</b>.
             </div>
           )}
         </motion.header>
@@ -371,6 +380,7 @@ export default function ProfessionsPage() {
 
               let chooseLabel = "Обрати професію";
               let disabled = busy;
+              const levelLocked = playerLevel < p.min_level;
 
               if (owned) {
                 disabled = true;
@@ -380,6 +390,11 @@ export default function ProfessionsPage() {
                 chooseLabel = `Обрати за ${secondCost} клейнодів`;
               } else if (total >= 2) {
                 chooseLabel = "Досягнуто максимум професій";
+                disabled = true;
+              }
+
+              if (levelLocked) {
+                chooseLabel = `Замкнено до рівня ${p.min_level}`;
                 disabled = true;
               }
 
@@ -423,9 +438,26 @@ export default function ProfessionsPage() {
                       >
                         {isGather ? "Збиральна професія" : "Крафтова професія"}
                       </span>
+                      {levelLocked && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full border border-rose-400/60 bg-rose-500/10 text-rose-100">
+                          🔒 Рівень {p.min_level}
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-[12px] text-slate-300">{ui.description}</p>
+
+                    {owned && (
+                      <div className="mt-1">
+                        <div className="text-[11px] text-slate-300">Рівень {owned.level} · XP {owned.xp}</div>
+                        <div className="mt-1 h-1.5 rounded bg-slate-800">
+                          <div
+                            className="h-1.5 rounded bg-emerald-400"
+                            style={{ width: `${Math.max(5, Math.min(100, Math.round((owned.xp % 100) )))}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2 pt-1">
                       {!owned && (
@@ -460,7 +492,7 @@ export default function ProfessionsPage() {
                         }}
                         className="inline-flex items-center justify-center rounded-lg border border-slate-600/70 text-slate-300 text-[11px] px-3 py-1.5 hover:border-slate-300 hover:text-slate-50 transition"
                       >
-                        Детальніше
+                        Перейти
                       </button>
                     </div>
                   </div>

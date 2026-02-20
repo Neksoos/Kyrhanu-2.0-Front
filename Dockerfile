@@ -1,24 +1,20 @@
-FROM node:20-alpine AS build
+FROM python:3.12-slim
+
+# Оптимальні змінні середовища
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --no-audit --no-fund
+# Копіюємо requirements і встановлюємо залежності
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Копіюємо весь код
 COPY . .
-RUN npm run build
 
-FROM nginx:1.27-alpine
+# Щоб Python бачив локальні імпорти (routers, services і т.д.)
+ENV PYTHONPATH=/app
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Runtime env generator (writes /usr/share/nginx/html/config.js)
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-# ✅ make sure it is executable at build time (Railway start command can execute file directly)
-RUN chmod 755 /docker-entrypoint.sh
-
-EXPOSE 80
-
-# ✅ run via sh (works even if platform doesn't exec scripts as start command)
-ENTRYPOINT ["sh", "/docker-entrypoint.sh"]
+# Запуск: слухаємо PORT від Railway (fallback 8080 локально)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]

@@ -92,12 +92,38 @@ type DailyLoginResponse = {
 
 type ProfileResponse = {
   ok?: boolean;
-  player: ProfileDTO;
+  player?: ProfileDTO;
   profile?: ProfileDTO;
-  data?: { player?: ProfileDTO; profile?: ProfileDTO };
+  me?: ProfileDTO;
+  user?: ProfileDTO;
+  character?: ProfileDTO;
+  data?: {
+    player?: ProfileDTO;
+    profile?: ProfileDTO;
+    me?: ProfileDTO;
+    user?: ProfileDTO;
+    character?: ProfileDTO;
+    entry?: EntryState;
+    entry_state?: EntryState;
+    daily_login?: DailyLoginResponse | null;
+  };
   entry?: EntryState;
+  entry_state?: EntryState;
   daily_login?: DailyLoginResponse | null;
+  dailyLogin?: DailyLoginResponse | null;
 };
+
+function looksLikeProfile(v: unknown): v is ProfileDTO {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.tg_id === "number" ||
+    (typeof o.level === "number" &&
+      typeof o.hp === "number" &&
+      typeof o.mp === "number" &&
+      typeof o.energy === "number")
+  );
+}
 
 // ---------------------------------------------
 // THEMING
@@ -330,7 +356,20 @@ export default function CityPage() {
 
         if (cancelled) return;
 
-        const player = body?.player || body?.profile || body?.data?.player || body?.data?.profile;
+        const payload = body?.data && typeof body.data === "object" ? body.data : body;
+
+        const player =
+          body?.player ||
+          body?.profile ||
+          body?.me ||
+          body?.user ||
+          body?.character ||
+          payload?.player ||
+          payload?.profile ||
+          payload?.me ||
+          payload?.user ||
+          payload?.character ||
+          (looksLikeProfile(payload) ? payload : null);
 
         if (!player) {
           const msg =
@@ -342,7 +381,7 @@ export default function CityPage() {
         }
 
         setProfile(player);
-        setEntryState(body.entry || null);
+        setEntryState(body.entry || body.entry_state || payload?.entry || payload?.entry_state || null);
 
         // regen popup
         if (
@@ -355,7 +394,7 @@ export default function CityPage() {
         }
 
         // daily login
-        const dl = body.daily_login || null;
+        const dl = body.daily_login || body.dailyLogin || payload?.daily_login || null;
         if (dl) {
           const xp = Number(dl.xp_gain || 0);
           const coins = Number(dl.coins_gain || 0);

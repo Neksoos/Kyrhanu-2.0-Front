@@ -1,34 +1,10 @@
-node_modules/
-dist/
-.vite/
-.git/
-*.log
+node_modules
+.next
+out
+dist
+.cache
 .env
-
-# deps
-node_modules/
-
-# build
-dist/
-build/
-
-# vite
-.vite/
-
-# env
-.env
-.env.*.local
-
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
+.env.*
+Dockerfile*
+.git
+.gitignore

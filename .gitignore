@@ -1,22 +1,21 @@
-# deps
+# Node.js
 node_modules/
+npm-debug.log
+yarn-error.log
 
-# build
+
+# Next.js build
+.next/
+out/
 dist/
-.vite/
+.cache/
 
-# env
+# Environment
 .env
-.env.*.local
+.env.local
+.env.production
+.env.development
 
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS/IDE
+# System files
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/

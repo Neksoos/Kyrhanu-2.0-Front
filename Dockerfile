@@ -1,20 +1,34 @@
-FROM python:3.12-slim
-
-# Оптимальні змінні середовища
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
+# ---- build stage ----
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Копіюємо requirements і встановлюємо залежності
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Краще кешується: спершу лише маніфести
+COPY package*.json ./
+RUN npm ci --no-audit --progress=false
 
-# Копіюємо весь код
+# Потім код
 COPY . .
 
-# Щоб Python бачив локальні імпорти (routers, services і т.д.)
-ENV PYTHONPATH=/app
+# Білд Next.js (без телеметрії)
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
 
-# Запуск: слухаємо PORT від Railway (fallback 8080 локально)
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# ---- run stage ----
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Лише потрібні файли
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/app ./app
+
+# Встановлюємо тільки прод-залежності
+RUN npm ci --omit=dev --no-audit --progress=false
+
+EXPOSE 3000
+CMD ["npm", "start"]

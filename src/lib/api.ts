@@ -1,3 +1,5 @@
+import { getTgIdSync } from "@/lib/tg";
+
 // lib/api.ts
 // ===============================
 // ENV
@@ -142,6 +144,17 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
           if (k.toLowerCase() === "x-tg-id") hasTgHeader = true;
         });
         if (!hasTgHeader) headers.set("X-Tg-Id", String(tgId));
+      }
+
+      // 3) Фолбек: якщо не в Telegram-контексті, пробуємо зчитати tg_id
+      // (DEV env NEXT_PUBLIC_DEV_TG_ID, hash/initData parser тощо).
+      let hasTgHeader = false;
+      headers.forEach((_v, k) => {
+        if (k.toLowerCase() === "x-tg-id") hasTgHeader = true;
+      });
+      if (!hasTgHeader) {
+        const fallbackTgId = getTgIdSync();
+        if (fallbackTgId) headers.set("X-Tg-Id", String(fallbackTgId));
       }
     } catch {}
   }

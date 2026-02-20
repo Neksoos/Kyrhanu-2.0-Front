@@ -34,7 +34,7 @@ const TRACKS: Track[] = [
   { id: "peaks2", src: "/audio/Shadow of theол Peaks.mp3", title: "Shadow of theол Peaks" },
   { id: "weird1", src: "/audio/Shadows of the Stepgjgfpes.mp3", title: "Shadows of the Stepgjgfpes" },
   { id: "untitled", src: "/audio/Untitled.mp3", title: "Untitled" },
-  { id: "untitled2", src: "/audio/Untiolътled.mp3", title: "Untiolътled" },
+  { id: "untitled2", src: "/audio/Untiольtled.mp3", title: "Untiольtled" },
 ];
 
 function clamp01(v: number) {

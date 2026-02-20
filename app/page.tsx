@@ -91,8 +91,10 @@ type DailyLoginResponse = {
 };
 
 type ProfileResponse = {
-  ok: boolean;
+  ok?: boolean;
   player: ProfileDTO;
+  profile?: ProfileDTO;
+  data?: { player?: ProfileDTO; profile?: ProfileDTO };
   entry?: EntryState;
   daily_login?: DailyLoginResponse | null;
 };
@@ -328,7 +330,9 @@ export default function CityPage() {
 
         if (cancelled) return;
 
-        if (!body?.ok || !body?.player) {
+        const player = body?.player || body?.profile || body?.data?.player || body?.data?.profile;
+
+        if (!player) {
           const msg =
             (body as any)?.detail ||
             (body as any)?.error ||
@@ -337,7 +341,7 @@ export default function CityPage() {
           throw new Error(msg);
         }
 
-        setProfile(body.player);
+        setProfile(player);
         setEntryState(body.entry || null);
 
         // regen popup

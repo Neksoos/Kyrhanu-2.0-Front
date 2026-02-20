@@ -1,1 +1,0 @@
-export const ADMIN_TOKEN_KEY = "kurhany_admin_token";

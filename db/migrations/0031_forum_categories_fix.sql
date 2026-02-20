@@ -1,2 +1,0 @@
-ALTER TABLE forum_categories
-ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '';

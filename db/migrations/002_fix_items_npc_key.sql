@@ -1,2 +1,0 @@
-ALTER TABLE items
-ALTER COLUMN npc_key DROP NOT NULL;

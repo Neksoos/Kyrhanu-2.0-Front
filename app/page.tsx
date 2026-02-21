@@ -111,6 +111,8 @@ type ProfileResponse = {
   entry_state?: EntryState;
   daily_login?: DailyLoginResponse | null;
   dailyLogin?: DailyLoginResponse | null;
+  result?: any;
+  payload?: any;
 };
 
 function looksLikeProfile(v: unknown): v is ProfileDTO {
@@ -123,6 +125,74 @@ function looksLikeProfile(v: unknown): v is ProfileDTO {
       typeof o.mp === "number" &&
       typeof o.energy === "number")
   );
+}
+
+function toNum(...vals: unknown[]): number {
+  for (const v of vals) {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && v.trim()) {
+      const n = Number(v);
+      if (!Number.isNaN(n) && Number.isFinite(n)) return n;
+    }
+  }
+  return 0;
+}
+
+function normalizeProfile(raw: any): ProfileDTO | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const candidate = raw as Record<string, any>;
+  const normalized: ProfileDTO = {
+    tg_id: toNum(candidate.tg_id, candidate.tgId, candidate.user_id, candidate.userId, candidate.id),
+    name: String(
+      candidate.name || candidate.nickname || candidate.player_name || candidate.username || "Мандрівник"
+    ),
+    level: toNum(candidate.level, candidate.lvl),
+    xp: toNum(candidate.xp, candidate.experience),
+    xp_needed: toNum(candidate.xp_needed, candidate.xpNeed, candidate.next_level_xp, candidate.xp_to_next),
+    race_key: candidate.race_key ?? candidate.raceKey ?? null,
+    class_key: candidate.class_key ?? candidate.classKey ?? null,
+    gender: candidate.gender ?? null,
+    hp_max: toNum(candidate.hp_max, candidate.max_hp),
+    mp_max: toNum(candidate.mp_max, candidate.max_mp),
+    atk: toNum(candidate.atk, candidate.attack),
+    defense: toNum(candidate.defense, candidate.def, candidate.armor),
+    chervontsi: toNum(candidate.chervontsi, candidate.coins, candidate.gold),
+    kleynody: toNum(candidate.kleynody, candidate.gems, candidate.crystals),
+    hp: toNum(candidate.hp, candidate.current_hp),
+    mp: toNum(candidate.mp, candidate.current_mp),
+    energy: toNum(candidate.energy, candidate.stamina),
+    energy_max: toNum(candidate.energy_max, candidate.max_energy, candidate.stamina_max),
+  };
+
+  const enoughData =
+    normalized.tg_id > 0 ||
+    (normalized.level > 0 && (normalized.hp_max > 0 || normalized.energy_max > 0));
+
+  return enoughData ? normalized : null;
+}
+
+function findProfileCandidate(body: any): any {
+  const layers = [
+    body,
+    body?.data,
+    body?.result,
+    body?.payload,
+    body?.data?.data,
+    body?.result?.data,
+    body?.payload?.data,
+  ];
+
+  const keys = ["player", "profile", "me", "user", "character"];
+  for (const layer of layers) {
+    if (!layer || typeof layer !== "object") continue;
+    for (const k of keys) {
+      if ((layer as any)[k]) return (layer as any)[k];
+    }
+    if (looksLikeProfile(layer)) return layer;
+  }
+
+  return null;
 }
 
 // ---------------------------------------------
@@ -358,18 +428,8 @@ export default function CityPage() {
 
         const payload = body?.data && typeof body.data === "object" ? body.data : body;
 
-        const player =
-          body?.player ||
-          body?.profile ||
-          body?.me ||
-          body?.user ||
-          body?.character ||
-          payload?.player ||
-          payload?.profile ||
-          payload?.me ||
-          payload?.user ||
-          payload?.character ||
-          (looksLikeProfile(payload) ? payload : null);
+        const rawPlayer = findProfileCandidate(body);
+        const player = normalizeProfile(rawPlayer);
 
         if (!player) {
           const msg =
@@ -381,12 +441,25 @@ export default function CityPage() {
         }
 
         setProfile(player);
-        setEntryState(body.entry || body.entry_state || payload?.entry || payload?.entry_state || null);
+        const entry =
+          body.entry ||
+          body.entry_state ||
+          body?.data?.entry ||
+          body?.data?.entry_state ||
+          body?.result?.entry ||
+          body?.result?.entry_state ||
+          body?.payload?.entry ||
+          body?.payload?.entry_state ||
+          payload?.entry ||
+          payload?.entry_state ||
+          null;
+
+        setEntryState(entry);
 
         // regen popup
         if (
-          body.entry &&
-          (body.entry.regen_hp > 0 || body.entry.regen_mp > 0 || body.entry.regen_energy > 0)
+          entry &&
+          (entry.regen_hp > 0 || entry.regen_mp > 0 || entry.regen_energy > 0)
         ) {
           setShowRegenPopup(true);
           const t = window.setTimeout(() => setShowRegenPopup(false), 2500);
@@ -394,7 +467,14 @@ export default function CityPage() {
         }
 
         // daily login
-        const dl = body.daily_login || body.dailyLogin || payload?.daily_login || null;
+        const dl =
+          body.daily_login ||
+          body.dailyLogin ||
+          body?.data?.daily_login ||
+          body?.result?.daily_login ||
+          body?.payload?.daily_login ||
+          payload?.daily_login ||
+          null;
         if (dl) {
           const xp = Number(dl.xp_gain || 0);
           const coins = Number(dl.coins_gain || 0);

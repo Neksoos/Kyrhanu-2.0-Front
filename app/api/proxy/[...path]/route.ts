@@ -58,8 +58,7 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
 
   headers.delete("host");
 
-  // ✅ КРИТИЧНО ДЛЯ TELEGRAM WEBVIEW:
-  // Просимо backend/edge НЕ gzip'ити відповідь
+  // ✅ КРИТИЧНО: не просимо gzip/br у бекенда
   headers.set("accept-encoding", "identity");
 
   const method = req.method.toUpperCase();
@@ -95,12 +94,11 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
     if (!HOP_BY_HOP_HEADERS.has(k)) resHeaders.set(key, value);
   });
 
-  // ✅ Якщо раптом upstream все одно дав content-encoding — прибираємо,
-  // бо ми віддаємо raw bytes і WebView може “розпакувати” ще раз і впасти.
+  resHeaders.set("cache-control", "no-store");
+
+  // ✅ КРИТИЧНО: прибираємо content-encoding, щоб WebView не “розпаковував” ще раз
   resHeaders.delete("content-encoding");
   resHeaders.delete("content-length");
-
-  resHeaders.set("cache-control", "no-store");
 
   const buf = await upstream.arrayBuffer();
   return new NextResponse(buf, {

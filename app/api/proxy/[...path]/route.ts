@@ -33,7 +33,6 @@ function buildTargetUrl(req: NextRequest, pathParts: string[]) {
   const base = getBackendBaseUrl();
   const path = "/" + pathParts.map(encodeURIComponent).join("/");
   const url = new URL(base + path);
-  // прокидаємо query string
   req.nextUrl.searchParams.forEach((v, k) => url.searchParams.append(k, v));
   return url;
 }
@@ -57,10 +56,12 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
     if (!HOP_BY_HOP_HEADERS.has(k)) headers.set(key, value);
   });
 
-  // якщо фронт надіслав Host — не прокидуємо, щоб не ламати бек
   headers.delete("host");
 
-  // тіло тільки якщо не GET/HEAD
+  // ✅ КРИТИЧНО ДЛЯ TELEGRAM WEBVIEW:
+  // Просимо backend/edge НЕ gzip'ити відповідь
+  headers.set("accept-encoding", "identity");
+
   const method = req.method.toUpperCase();
   const hasBody = method !== "GET" && method !== "HEAD";
 
@@ -88,14 +89,17 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
     );
   }
 
-  // Відповідь назад клієнту (не перетворюємо 401/404 в 500)
   const resHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
     const k = key.toLowerCase();
     if (!HOP_BY_HOP_HEADERS.has(k)) resHeaders.set(key, value);
   });
 
-  // не даємо Next автоматично кешувати
+  // ✅ Якщо раптом upstream все одно дав content-encoding — прибираємо,
+  // бо ми віддаємо raw bytes і WebView може “розпакувати” ще раз і впасти.
+  resHeaders.delete("content-encoding");
+  resHeaders.delete("content-length");
+
   resHeaders.set("cache-control", "no-store");
 
   const buf = await upstream.arrayBuffer();
